@@ -1,0 +1,21 @@
+# Node.js / TypeScript / Webpack / TailwindCSS
+node_modules/
+dist/
+build/
+public/bundle.js
+public/style.css
+*.log
+.DS_Store
+.env
+.cache/
+.idea/
+.vscode/
+# OS generated files
+Thumbs.db
+Desktop.ini
+# TypeScript
+*.tsbuildinfo
+# Webpack
+.cache/
+# TailwindCSS
+*.tmp
