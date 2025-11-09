@@ -15,7 +15,7 @@ window.addEventListener('DOMContentLoaded', () => {
 	renderGameBoards();
 });
 
-// Render empty Tetris boards for both players
+// Render empty boards for both players
 function renderGameBoards() {
 	const rows = 20;
 	const cols = 10;
