@@ -27,32 +27,41 @@ export class Block {
 
   /**
    * Move the block down by incrementing its row, with boundary check.
-   * @param maxRows - maximum number of rows (default: 20)
+   * @param maxRows - maximum number of rows (required)
+   * @returns true if moved, false if at boundary
    */
-  moveDown(maxRows: number = 20) {
+  moveDown(maxRows: number): boolean {
     if (this.row < maxRows - 1) {
       this.row += 1;
+      return true;
     }
+    return false;
   }
 
   /**
    * Move the block left by decrementing its col, with boundary check.
-   * @param minCol - minimum column index (default: 0)
+   * @param minCol - minimum column index (required)
+   * @returns true if moved, false if at boundary
    */
-  moveLeft(minCol: number = 0) {
+  moveLeft(minCol: number): boolean {
     if (this.col > minCol) {
       this.col -= 1;
+      return true;
     }
+    return false;
   }
 
   /**
    * Move the block right by incrementing its col, with boundary check.
-   * @param maxCols - maximum number of columns (default: 10)
+   * @param maxCols - maximum number of columns (required)
+   * @returns true if moved, false if at boundary
    */
-  moveRight(maxCols: number = 10) {
+  moveRight(maxCols: number): boolean {
     if (this.col < maxCols - 1) {
       this.col += 1;
+      return true;
     }
+    return false;
   }
 }
 

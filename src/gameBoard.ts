@@ -114,14 +114,14 @@ export class GameBoard {
       const remaining = Math.max(0, this.fallInterval - elapsed);
       const seconds = (remaining / 1000).toFixed(2);
       // Update label
-        const labelSpan = this.fallIntervalDisplay.querySelector('.interval-label');
+      const labelSpan = this.fallIntervalDisplay.querySelector('.interval-label');
       if (labelSpan) {
         labelSpan.textContent = `Next fall in: ${seconds}s`;
       } else {
         this.fallIntervalDisplay.textContent = `Next fall in: ${seconds}s`;
       }
       // Update progress bar
-        const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement;
+      const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement;
       if (bar) {
         const progress = 1 - remaining / this.fallInterval;
         bar.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
@@ -144,12 +144,10 @@ export class GameBoard {
         width: stageWidth,
         height: stageHeight,
       });
-      const gridLayer = new Konva.Layer();
-      const blockLayer = new Konva.Layer();
-      this.gridLayer = gridLayer;
-      this.blockLayer = blockLayer;
-      this.stage.add(gridLayer);
-      this.stage.add(blockLayer);
+      this.gridLayer = new Konva.Layer();
+      this.blockLayer = new Konva.Layer();
+      this.stage.add(this.gridLayer);
+      this.stage.add(this.blockLayer);
       // Draw grid once during initialization
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
@@ -162,10 +160,10 @@ export class GameBoard {
             stroke: '#1f2937',
             strokeWidth: 1,
           });
-          gridLayer.add(gridRect);
+          this.gridLayer.add(gridRect);
         }
       }
-      gridLayer.batchDraw();
+      this.gridLayer.batchDraw();
     } else {
       this.stage.width(stageWidth);
       this.stage.height(stageHeight);
@@ -262,9 +260,9 @@ export class GameBoard {
     if (targetCol < 0 || targetCol > this.cols - 1) return;
     this.pendingMoveDirection = direction;
     if (direction === 'left') {
-      this.block.moveLeft();
+      this.block.moveLeft(0);
     } else {
-      this.block.moveRight();
+      this.block.moveRight(this.cols);
     }
     this.render();
     // Use a short timeout to allow the green arrow to be visible for a frame
@@ -302,7 +300,7 @@ export class GameBoard {
    */
   slideBlockDown(callback?: () => void) {
     if (this.isSliding) return;
-    this.block.moveDown();
+    this.block.moveDown(this.rows);
     this.render();
     if (callback) callback();
   }

@@ -4,7 +4,7 @@ jest.mock('konva', () => ({
 }));
 jest.mock('color', () => ({
   __esModule: true,
-  default: () => ({ darken: (amount: number) => ({ hex: () => '#000' }) }),
+  default: (input: any) => ({ darken: (amount: number) => ({ hex: () => '#000' }) }),
 }));
 import { Block } from '../src/block';
 import { Player } from '../src/player';
