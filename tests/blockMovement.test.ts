@@ -42,19 +42,17 @@ describe('Block movement', () => {
   it('does not move right with oversized maxCols', () => {
     const block = new Block(5, 9);
     block.moveRight(100);
-    expect(block.col).toBe(10);
-    // Should not exceed maxCols - 1, so next move should not increment
+    expect(block.col).toBe(10); // pure movement: not clamped
     block.moveRight(10);
-    expect(block.col).toBe(9);
+    expect(block.col).toBe(10); // pure movement: not clamped
   });
 
   it('does not move down with oversized maxRows', () => {
     const block = new Block(19, 5);
     block.moveDown(100);
-    expect(block.row).toBe(20);
-    // Should not exceed maxRows - 1, so next move should not increment
+    expect(block.row).toBe(20); // pure movement: not clamped
     block.moveDown(20);
-    expect(block.row).toBe(19);
+    expect(block.row).toBe(20); // pure movement: not clamped
   });
   it('does not move left out of bounds', () => {
     const block = new Block(5, 0);

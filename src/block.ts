@@ -10,6 +10,19 @@ import Color from 'color';
 
 export class Block {
   /**
+   * Clamp the block's row and col to valid board bounds.
+   * @param maxRows - maximum number of rows (required)
+   * @param maxCols - maximum number of columns (required)
+   */
+  clampToBounds(maxRows: number, maxCols: number) {
+    if (typeof maxRows === 'number' && maxRows > 0) {
+      this.row = Math.max(0, Math.min(this.row, maxRows - 1));
+    }
+    if (typeof maxCols === 'number' && maxCols > 0) {
+      this.col = Math.max(0, Math.min(this.col, maxCols - 1));
+    }
+  }
+  /**
    * Spawn a block at the top row (row 0) with given column and optional color.
    */
   static spawnAtTop(col: number, player: Player) {
@@ -33,15 +46,12 @@ export class Block {
   moveDown(maxRows: number): boolean {
     // Guard: maxRows must be positive and at least 1
     if (typeof maxRows !== 'number' || maxRows <= 0) return false;
-    const maxRowIdx = Math.max(0, maxRows - 1);
+    const maxRowIdx = maxRows - 1;
     if (this.row < maxRowIdx) {
       this.row += 1;
-      // Clamp to maxRowIdx
-      this.row = Math.min(this.row, maxRowIdx);
       return true;
     }
-    // Always clamp to maxRowIdx if out of bounds
-    this.row = Math.min(this.row, maxRowIdx);
+    // Do not mutate this.row on failure
     return false;
   }
 
@@ -55,8 +65,6 @@ export class Block {
     if (typeof minCol !== 'number' || minCol < 0) return false;
     if (this.col > minCol) {
       this.col -= 1;
-      // Clamp to minCol
-      this.col = Math.max(this.col, minCol);
       return true;
     }
     // Always clamp to minCol if out of bounds
@@ -72,15 +80,12 @@ export class Block {
   moveRight(maxCols: number): boolean {
     // Guard: maxCols must be positive and at least 1
     if (typeof maxCols !== 'number' || maxCols <= 0) return false;
-    const maxColIdx = Math.max(0, maxCols - 1);
+    const maxColIdx = maxCols - 1;
     if (this.col < maxColIdx) {
       this.col += 1;
-      // Clamp to maxColIdx
-      this.col = Math.min(this.col, maxColIdx);
       return true;
     }
-    // Always clamp to maxColIdx if out of bounds
-    this.col = Math.min(this.col, maxColIdx);
+    // Do not mutate this.col on failure
     return false;
   }
 }
