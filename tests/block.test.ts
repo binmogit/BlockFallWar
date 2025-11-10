@@ -12,7 +12,7 @@ import { Player } from '../src/player';
 describe('Block', () => {
   describe('spawnAtTop', () => {
     const playerTypes = ['player', 'bot', 'fakeplayer'] as const;
-    playerTypes.forEach(type => {
+    playerTypes.forEach((type) => {
       it(`spawns at top row for player type '${type}'`, () => {
         const player = Player.create(type);
         const block = Block.spawnAtTop(4, player);

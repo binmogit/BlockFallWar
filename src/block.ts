@@ -14,13 +14,19 @@ export class Block {
    * @param maxRows - maximum number of rows (required)
    * @param maxCols - maximum number of columns (required)
    */
-  clampToBounds(maxRows: number, maxCols: number) {
+  clampToBounds(maxRows: number, maxCols: number): boolean {
+    let clamped = false;
     if (typeof maxRows === 'number' && maxRows > 0) {
-      this.row = Math.max(0, Math.min(this.row, maxRows - 1));
+      const newRow = Math.max(0, Math.min(this.row, maxRows - 1));
+      if (newRow !== this.row) clamped = true;
+      this.row = newRow;
     }
     if (typeof maxCols === 'number' && maxCols > 0) {
-      this.col = Math.max(0, Math.min(this.col, maxCols - 1));
+      const newCol = Math.max(0, Math.min(this.col, maxCols - 1));
+      if (newCol !== this.col) clamped = true;
+      this.col = newCol;
     }
+    return clamped;
   }
   /**
    * Spawn a block at the top row (row 0) with given column and optional color.
