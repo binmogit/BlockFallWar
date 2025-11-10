@@ -27,8 +27,6 @@ export class GameBoardConfig {
  *
  * @class GameBoard
  * @param {string} parentId - The DOM id of the board container.
- * @param {ControlType} controlType - 'player' or 'bot' for controls.
-// ...existing code...
  * @param {Partial<GameBoardConfig>} [config] - Optional config overrides.
  *
  * @property {number} rows - Number of grid rows.
@@ -57,7 +55,6 @@ export class GameBoard {
   currentRow: number = 0;
   pixelOffsetY: number = 0;
   pixelOffsetX: number = 0;
-  // ...existing code...
   fallIntervalDisplay: HTMLElement;
   config: GameBoardConfig;
   private stage: Konva.Stage | null = null;
@@ -69,7 +66,6 @@ export class GameBoard {
    * Create a new GameBoard instance.
    * @param parentId - The DOM id of the board container.
    * @param controlType - 'player' or 'bot' for controls.
-   * ...existing code...
    * @param config - Optional config overrides.
    */
   constructor(parentId: string, controlType: ControlType, config?: Partial<GameBoardConfig>) {
@@ -81,7 +77,7 @@ export class GameBoard {
     this.boardDiv = this.parent.querySelector('.board')!;
     // Create player for this board
     this.player = Player.create(controlType as PlayerType);
-    this.block = Block.spawnAtTop(Math.floor(this.cols / 2), this.player);
+    this.block = Block.spawnAtTop(Math.floor(this.cols / 2));
     this.fallIntervalDisplay = this.parent.querySelector('[id^=interval-]')!;
     this.controls = new Controls(controlType, (event) => this.handleMove(event.direction));
     window.addEventListener('resize', () => this.render());
@@ -97,8 +93,10 @@ export class GameBoard {
       const now = performance.now();
       const elapsed = now - this.lastFallTime;
       const remaining = Math.max(0, this.block.fallInterval - elapsed);
-      // Throttle updates to at most every 100ms, except when remaining === 0
-      if (remaining !== 0 && now - this.lastFallDisplayUpdate < 100) {
+      // Throttle updates to at most ~60fps (every 16ms) so the progress bar
+      // animates smoothly. Still bypass throttle when remaining === 0 so the
+      // final state is shown immediately.
+      if (remaining !== 0 && now - this.lastFallDisplayUpdate < 16) {
         return;
       }
       this.lastFallDisplayUpdate = now;
@@ -113,8 +111,19 @@ export class GameBoard {
       // Update progress bar
       const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement;
       if (bar) {
-        const progress = 1 - remaining / this.block.fallInterval;
-        bar.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+        // Compute progress safely. Avoid division by zero if fallInterval is invalid
+        // (non-finite or <= 0). In that case, show full progress only when remaining === 0,
+        // otherwise show 0. Otherwise compute 1 - remaining / fallInterval.
+        let progress: number;
+        const fallInterval = this.block?.fallInterval;
+        if (!Number.isFinite(fallInterval) || fallInterval <= 0) {
+          progress = remaining === 0 ? 1 : 0;
+        } else {
+          progress = 1 - remaining / fallInterval;
+        }
+        // Clamp to [0,1] to avoid CSS surprises
+        progress = Math.max(0, Math.min(1, progress));
+        bar.style.width = `${progress * 100}%`;
       }
     }
   }

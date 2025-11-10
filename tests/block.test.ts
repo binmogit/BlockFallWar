@@ -8,6 +8,7 @@ jest.mock('color', () => ({
 }));
 import { Block } from '../src/block';
 import { Player } from '../src/player';
+import { BLOCK_DEFAULTS } from '../src/blockConfig';
 
 describe('Block', () => {
   describe('spawnAtTop', () => {
@@ -15,26 +16,26 @@ describe('Block', () => {
     playerTypes.forEach((type) => {
       it(`spawns at top row for player type '${type}'`, () => {
         const player = Player.create(type);
-        const block = Block.spawnAtTop(4, player);
+        const block = Block.spawnAtTop(4);
         expect(block.row).toBe(0);
         expect(block.col).toBe(4);
-        expect(block.color).toBe(player.color);
+        expect(block.color).toBe(BLOCK_DEFAULTS.red);
       });
     });
 
     it('spawns at col 0 and maxColumn', () => {
       const player = Player.create('player');
-      const block0 = Block.spawnAtTop(0, player);
+      const block0 = Block.spawnAtTop(0);
       expect(block0.col).toBe(0);
-      const blockMax = Block.spawnAtTop(9, player);
+      const blockMax = Block.spawnAtTop(9);
       expect(blockMax.col).toBe(9);
     });
 
     it('does not clamp col out of range (caller responsibility)', () => {
       const player = Player.create('player');
-      const blockNeg = Block.spawnAtTop(-1, player);
+      const blockNeg = Block.spawnAtTop(-1);
       expect(blockNeg.col).toBe(-1);
-      const blockOver = Block.spawnAtTop(100, player);
+      const blockOver = Block.spawnAtTop(100);
       expect(blockOver.col).toBe(100);
     });
   });

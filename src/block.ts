@@ -10,6 +10,10 @@ import Konva from 'konva';
 import Color from 'color';
 
 export class Block {
+  // Reasonable interval bounds (ms). Intervals outside these will fall back to defaults.
+  // MIN_INTERVAL is ~1 frame at 60fps; MAX_INTERVAL is an upper safety cap to avoid extremely long timers.
+  private static readonly MIN_INTERVAL = 16;
+  private static readonly MAX_INTERVAL = 10000;
   /**
    * Clamp the block's row and col to valid board bounds.
    * @param maxRows - maximum number of rows (required)
@@ -30,30 +34,53 @@ export class Block {
     return clamped;
   }
   /**
-   * Spawn a block at the top row (row 0) with given column and optional color, fallInterval, and moveInterval.
+   * Spawn a block at the top row (row 0) for the given column and player.
+   *
+   * @param col - column index where the block will be spawned
+   *
    */
-  static spawnAtTop(col: number, player: Player) {
-    // Use defaults for fallInterval and moveInterval
-    return new Block(0, col, player.color);
+  static spawnAtTop(col: number) {
+    return new Block(0, col);
   }
   row: number;
   col: number;
   color: string;
+  /**
+   * Interval between automatic downward moves (controls fall speed).
+   * Units: milliseconds.
+   * Constraints: positive finite number. Values are clamped when set to
+   * Block.MIN_INTERVAL (minimum, >= 16ms) and Block.MAX_INTERVAL (maximum, <= 10000ms).
+   */
   fallInterval: number;
+  /**
+   * Interval between allowed horizontal moves (left/right responsiveness).
+   * Units: milliseconds.
+   * Constraints: positive finite number. Values are clamped when set to
+   * Block.MIN_INTERVAL (minimum, >= 16ms) and Block.MAX_INTERVAL (maximum, <= 10000ms).
+   */
   moveInterval: number;
 
   constructor(
     row: number,
     col: number,
-    color: string = '#f59e42',
+    color: string = BLOCK_DEFAULTS.red,
     fallInterval: number = BLOCK_DEFAULTS.fallInterval,
     moveInterval: number = BLOCK_DEFAULTS.moveInterval,
   ) {
     this.row = row;
     this.col = col;
     this.color = color;
-    this.fallInterval = fallInterval;
-    this.moveInterval = moveInterval;
+    // Validate intervals: must be finite numbers, > 0, and <= MAX_INTERVAL.
+    // If invalid, fall back to centralized BLOCK_DEFAULTS.
+    const validate = (val: number, defaultVal: number) => {
+      if (!Number.isFinite(val) || val <= 0) return defaultVal;
+      if (val > Block.MAX_INTERVAL) return defaultVal;
+      // Use integer milliseconds
+      return Math.max(Block.MIN_INTERVAL, Math.round(val));
+    };
+
+    this.fallInterval = validate(fallInterval, BLOCK_DEFAULTS.fallInterval);
+    this.moveInterval = validate(moveInterval, BLOCK_DEFAULTS.moveInterval);
   }
 
   /**
