@@ -164,8 +164,12 @@ export class GameBoard {
 
     if (this.blockLayer) {
       this.blockLayer.destroyChildren();
-      // Draw block
-  drawBlock(this.blockLayer, this.block, this.cellSize, pixelOffsetY > 0 || pixelOffsetX !== 0);
+      // Calculate move progress for shading
+      let moveProgress = 0;
+      if (pixelOffsetY > 0) {
+        moveProgress = Math.min(1, pixelOffsetY / this.cellSize);
+      }
+      drawBlock(this.blockLayer, this.block, this.cellSize, moveProgress);
       this.blockLayer.batchDraw();
     }
   }
@@ -187,12 +191,15 @@ export class GameBoard {
         requestAnimationFrame(animate);
       } else {
         if (direction === 'left') {
-          await this.block.moveLeftWithInterval(this.moveInterval);
+          await this.block.moveLeftWithInterval(this.fallInterval);
         } else {
-          await this.block.moveRightWithInterval(this.moveInterval);
+          await this.block.moveRightWithInterval(this.fallInterval);
         }
         this.render();
         this.isSliding = false;
+        // Restart falling after horizontal move
+        this.canMove = false;
+        this.startFalling();
       }
     };
     animate();
@@ -239,7 +246,14 @@ export class GameBoard {
         this.block.moveDown();
         this.render();
         this.isSliding = false;
-        if (callback) callback();
+        // Only allow left/right movement during moveInterval after landing
+        this.canMove = true;
+        this.moveIntervalDisplay.classList.add('bg-blue-900');
+        setTimeout(() => {
+          this.canMove = false;
+          this.moveIntervalDisplay.classList.remove('bg-blue-900');
+          if (callback) callback();
+        }, this.moveInterval);
       }
     };
     animate();

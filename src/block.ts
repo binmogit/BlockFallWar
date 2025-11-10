@@ -66,23 +66,27 @@ export class Block {
 }
 
 export function drawBlock(
-    layer: Konva.Layer,
-    block: Block,
-    cellSize: number,
-    darken: boolean = false,
+  layer: Konva.Layer,
+  block: Block,
+  cellSize: number,
+  moveProgress: number = 0, // 0 = just landed, 1 = about to move
 ) {
-    let color = block.color;
-    if (darken) {
-        color = Color(color).darken(0.1).hex();
-    }
-    const rect = new Konva.Rect({
-        x: block.col * cellSize,
-        y: block.row * cellSize,
-        width: cellSize,
-        height: cellSize,
-        fill: color,
-        stroke: '#1f2937',
-        strokeWidth: 1,
-    });
-    layer.add(rect);
+  // Clamp progress between 0 and 1
+  moveProgress = Math.max(0, Math.min(1, moveProgress));
+  const color = block.color;
+  const darkColor = Color(color).darken(0.3).hex();
+  // Gradient stops: top is block color, bottom is darkColor, with the dark region growing as moveProgress increases
+  const gradientStops = [0, color, moveProgress, color, moveProgress, darkColor, 1, darkColor];
+  const rect = new Konva.Rect({
+    x: block.col * cellSize,
+    y: block.row * cellSize,
+    width: cellSize,
+    height: cellSize,
+    fillLinearGradientStartPoint: { x: 0, y: 0 },
+    fillLinearGradientEndPoint: { x: 0, y: cellSize },
+    fillLinearGradientColorStops: gradientStops,
+    stroke: '#1f2937',
+    strokeWidth: 1,
+  });
+  layer.add(rect);
 }
