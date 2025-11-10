@@ -1,5 +1,6 @@
 // src/gameBoard.ts
 import { Block, drawBlock } from './block';
+import Konva from 'konva';
 import { GAME_BOARD_DEFAULTS } from './gameBoardConfig';
 import { Controls, ControlType } from './controls';
 
@@ -63,6 +64,8 @@ export class GameBoard {
   moveIntervalDisplay: HTMLElement;
   canMove: boolean = false;
   config: GameBoardConfig;
+  private stage: Konva.Stage | null = null;
+  private layer: Konva.Layer | null = null;
 
   /**
    * Create a new GameBoard instance.
@@ -88,10 +91,10 @@ export class GameBoard {
     this.fallIntervalDisplay.insertAdjacentElement('afterend', this.moveIntervalDisplay);
     this.controls = new Controls(controlType, (event) => this.handleMove(event.direction));
     window.addEventListener('resize', () => this.render());
-    this.render();
-    this.startFalling();
-    this.updateFallIntervalDisplay();
-    this.updateMoveIntervalDisplay();
+  this.render();
+  this.startFalling();
+  this.updateFallIntervalDisplay();
+  this.updateMoveIntervalDisplay();
   }
 
   /**
@@ -122,31 +125,45 @@ export class GameBoard {
     const cellWidth = Math.floor(rect.width / this.cols);
     const cellHeight = Math.floor(rect.height / this.rows);
     this.cellSize = Math.min(cellWidth, cellHeight);
-    const canvasWidth = this.cellSize * this.cols;
-    const canvasHeight = this.cellSize * this.rows;
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    canvas.style.width = canvasWidth + 'px';
-    canvas.style.height = canvasHeight + 'px';
-    canvas.className = 'block';
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#374151';
-      ctx.strokeStyle = '#1f2937';
+    const stageWidth = this.cellSize * this.cols;
+    const stageHeight = this.cellSize * this.rows;
+
+    // Create Konva stage and layer only once
+    if (!this.stage) {
+      this.boardDiv.innerHTML = '';
+      this.stage = new Konva.Stage({
+        container: this.boardDiv as HTMLDivElement,
+        width: stageWidth,
+        height: stageHeight,
+      });
+      this.layer = new Konva.Layer();
+      this.stage.add(this.layer);
+    } else {
+      this.stage.width(stageWidth);
+      this.stage.height(stageHeight);
+    }
+
+    if (this.layer) {
+      this.layer.destroyChildren();
+      // Draw grid
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
-          ctx.fillRect(c * this.cellSize, r * this.cellSize, this.cellSize, this.cellSize);
-          ctx.strokeRect(c * this.cellSize, r * this.cellSize, this.cellSize, this.cellSize);
+          const gridRect = new Konva.Rect({
+            x: c * this.cellSize,
+            y: r * this.cellSize,
+            width: this.cellSize,
+            height: this.cellSize,
+            fill: '#374151',
+            stroke: '#1f2937',
+            strokeWidth: 1,
+          });
+          this.layer.add(gridRect);
         }
       }
-      ctx.save();
-      ctx.translate(pixelOffsetX, pixelOffsetY);
-      drawBlock(ctx, this.block, this.cellSize, pixelOffsetY > 0 || pixelOffsetX !== 0);
-      ctx.restore();
+      // Draw block
+      drawBlock(this.layer, this.block, this.cellSize, pixelOffsetY > 0 || pixelOffsetX !== 0);
+      this.layer.batchDraw();
     }
-    this.boardDiv.innerHTML = '';
-    this.boardDiv.appendChild(canvas);
   }
 
   /**

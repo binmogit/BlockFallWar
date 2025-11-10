@@ -10,6 +10,7 @@ export interface ControlEvent {
 export class Controls {
   type: ControlType;
   onMove: (event: ControlEvent) => void | Promise<void>;
+  private keydownHandler?: (e: KeyboardEvent) => void;
 
   constructor(type: ControlType, onMove: (event: ControlEvent) => void | Promise<void>) {
     this.type = type;
@@ -21,19 +22,29 @@ export class Controls {
   }
 
   private setupPlayerListeners() {
-    window.addEventListener('keydown', (e) => {
+    this.keydownHandler = (e: KeyboardEvent) => {
+      if (e.repeat) return;  // Ignore key repeat events
       if (e.key === 'a' || e.key === 'ArrowLeft') {
         this.onMove({ direction: 'left' });
       } else if (e.key === 'd' || e.key === 'ArrowRight') {
         this.onMove({ direction: 'right' });
       }
-    });
+    };
+    window.addEventListener('keydown', this.keydownHandler);
+  }
+
+  public dispose() {
+    if (this.keydownHandler) {
+      window.removeEventListener('keydown', this.keydownHandler);
+      this.keydownHandler = undefined;
+    }
   }
 
   // For bot, call this method to move
   async botMove(direction: 'left' | 'right') {
-    if (this.type === 'bot') {
-      await this.onMove({ direction });
+    if (this.type !== 'bot') {
+      throw new Error('botMove can only be called on bot controls');
     }
+    await this.onMove({ direction });
   }
 }

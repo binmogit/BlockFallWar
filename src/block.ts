@@ -1,3 +1,5 @@
+import Konva from 'konva';
+import Color from 'color';
 // src/block.ts
 // Represents a single block on the grid
 
@@ -64,30 +66,23 @@ export class Block {
 }
 
 export function drawBlock(
-  ctx: CanvasRenderingContext2D,
-  block: Block,
-  cellSize: number,
-  darken: boolean = false,
+    layer: Konva.Layer,
+    block: Block,
+    cellSize: number,
+    darken: boolean = false,
 ) {
-  let color = block.color;
-  if (darken) {
-    // Simple darken: apply a filter or use a darker color
-    color = shadeColor(color, -10);
-  }
-  ctx.fillStyle = color;
-  ctx.fillRect(block.col * cellSize, block.row * cellSize, cellSize, cellSize);
-  ctx.strokeStyle = '#1f2937';
-  ctx.strokeRect(block.col * cellSize, block.row * cellSize, cellSize, cellSize);
-}
-
-// Utility to darken a hex color
-function shadeColor(color: string, percent: number): string {
-  // Only supports hex colors like #f59e42
-  let R = parseInt(color.substring(1, 3), 16);
-  let G = parseInt(color.substring(3, 5), 16);
-  let B = parseInt(color.substring(5, 7), 16);
-  R = Math.max(0, Math.min(255, R + Math.floor(255 * (percent / 100))));
-  G = Math.max(0, Math.min(255, G + Math.floor(255 * (percent / 100))));
-  B = Math.max(0, Math.min(255, B + Math.floor(255 * (percent / 100))));
-  return `#${R.toString(16).padStart(2, '0')}${G.toString(16).padStart(2, '0')}${B.toString(16).padStart(2, '0')}`;
+    let color = block.color;
+    if (darken) {
+        color = Color(color).darken(0.1).hex();
+    }
+    const rect = new Konva.Rect({
+        x: block.col * cellSize,
+        y: block.row * cellSize,
+        width: cellSize,
+        height: cellSize,
+        fill: color,
+        stroke: '#1f2937',
+        strokeWidth: 1,
+    });
+    layer.add(rect);
 }
