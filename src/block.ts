@@ -5,33 +5,84 @@ import Color from 'color';
 
 export class Block {
   /**
-   * Move the block down after a given interval (ms).
+   * Move the block down after a given interval (ms), with cancellation support.
    * @param interval - Time in ms to wait before moving down.
-   * @returns Promise that resolves after movement.
+   * @returns { promise: Promise<void>, cancel: () => void, timeoutId: number }
    */
-  async moveDownWithInterval(interval: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, interval));
-    this.moveDown();
+  moveDownWithInterval(interval: number) {
+    let cancelled = false;
+    let timeoutId: number = -1;
+    const promise = new Promise<void>((resolve) => {
+      timeoutId = window.setTimeout(() => {
+        if (!cancelled) {
+          // Add any game state validation here if needed
+          this.moveDown();
+        }
+        resolve();
+      }, interval);
+    });
+    return {
+      promise,
+      cancel: () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+      },
+      timeoutId,
+    };
   }
 
   /**
-   * Move the block left after a given interval (ms).
+   * Move the block left after a given interval (ms), with cancellation support.
    * @param interval - Time in ms to wait before moving left.
-   * @returns Promise that resolves after movement.
+   * @returns { promise: Promise<void>, cancel: () => void, timeoutId: number }
    */
-  async moveLeftWithInterval(interval: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, interval));
-    this.moveLeft();
+  moveLeftWithInterval(interval: number) {
+    let cancelled = false;
+    let timeoutId: number = -1;
+    const promise = new Promise<void>((resolve) => {
+      timeoutId = window.setTimeout(() => {
+        if (!cancelled) {
+          // Add any game state validation here if needed
+          this.moveLeft();
+        }
+        resolve();
+      }, interval);
+    });
+    return {
+      promise,
+      cancel: () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+      },
+      timeoutId,
+    };
   }
 
   /**
-   * Move the block right after a given interval (ms).
+   * Move the block right after a given interval (ms), with cancellation support.
    * @param interval - Time in ms to wait before moving right.
-   * @returns Promise that resolves after movement.
+   * @returns { promise: Promise<void>, cancel: () => void, timeoutId: number }
    */
-  async moveRightWithInterval(interval: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, interval));
-    this.moveRight();
+  moveRightWithInterval(interval: number) {
+    let cancelled = false;
+    let timeoutId: number = -1;
+    const promise = new Promise<void>((resolve) => {
+      timeoutId = window.setTimeout(() => {
+        if (!cancelled) {
+          // Add any game state validation here if needed
+          this.moveRight();
+        }
+        resolve();
+      }, interval);
+    });
+    return {
+      promise,
+      cancel: () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+      },
+      timeoutId,
+    };
   }
   row: number;
   col: number;

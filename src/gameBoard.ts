@@ -67,6 +67,7 @@ export class GameBoard {
   private stage: Konva.Stage | null = null;
   private gridLayer: Konva.Layer | null = null;
   private blockLayer: Konva.Layer | null = null;
+  private pendingMoveDirection: 'left' | 'right' | null = null;
 
   /**
    * Create a new GameBoard instance.
@@ -75,7 +76,12 @@ export class GameBoard {
    * @param interval - Interval time in ms for block falling.
    * @param config - Optional config overrides.
    */
-  constructor(parentId: string, controlType: ControlType, interval: number = 250, config?: Partial<GameBoardConfig>) {
+  constructor(
+    parentId: string,
+    controlType: ControlType,
+    interval: number = 250,
+    config?: Partial<GameBoardConfig>,
+  ) {
     this.config = new GameBoardConfig(config);
     this.rows = this.config.rows;
     this.cols = this.config.cols;
@@ -87,15 +93,16 @@ export class GameBoard {
     this.block = new Block(0, Math.floor(this.cols / 2));
     this.fallIntervalDisplay = this.parent.querySelector('[id^=interval-]')!;
     this.moveIntervalDisplay = document.createElement('div');
-    this.moveIntervalDisplay.className = 'absolute left-1/2 -translate-x-1/2 top-[60%] bg-gray-900 text-white px-2 py-1 rounded shadow text-xs';
+    this.moveIntervalDisplay.className =
+      'absolute left-1/2 -translate-x-1/2 top-[60%] bg-gray-900 text-white px-2 py-1 rounded shadow text-xs';
     this.moveIntervalDisplay.textContent = `${this.moveInterval}ms move window`;
     this.fallIntervalDisplay.insertAdjacentElement('afterend', this.moveIntervalDisplay);
     this.controls = new Controls(controlType, (event) => this.handleMove(event.direction));
     window.addEventListener('resize', () => this.render());
-  this.render();
-  this.startFalling();
-  this.updateFallIntervalDisplay();
-  this.updateMoveIntervalDisplay();
+    this.render();
+    this.startFalling();
+    this.updateFallIntervalDisplay();
+    this.updateMoveIntervalDisplay();
   }
 
   /**
@@ -170,6 +177,107 @@ export class GameBoard {
         moveProgress = Math.min(1, pixelOffsetY / this.cellSize);
       }
       drawBlock(this.blockLayer, this.block, this.cellSize, moveProgress);
+      // Draw grey arrows by default in both directions
+      ['left', 'right'].forEach((dir) => {
+        const arrowCol = this.block.col + (dir === 'right' ? -1 : 1);
+        const arrowRow = this.block.row;
+        if (arrowCol >= 0 && arrowCol < this.cols) {
+          const arrowPoints =
+            dir === 'left'
+              ? [
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.5,
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.25,
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.75,
+                ]
+              : [
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.5,
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.25,
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.75,
+                ];
+          const arrow = new Konva.Line({
+            points: arrowPoints,
+            fill: '#6b7280', // Tailwind gray-500
+            stroke: '#6b7280',
+            closed: true,
+            strokeWidth: 2,
+          });
+          if (this.blockLayer) {
+            this.blockLayer.add(arrow);
+          }
+        }
+      });
+      // Draw green arrow if a move is pending
+      if (this.pendingMoveDirection) {
+        const arrowCol = this.block.col + (this.pendingMoveDirection === 'left' ? -1 : 1);
+        const arrowRow = this.block.row;
+        if (arrowCol >= 0 && arrowCol < this.cols) {
+          const arrowPoints =
+            this.pendingMoveDirection === 'right'
+              ? [
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.5,
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.25,
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.75,
+                ]
+              : [
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.5,
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.25,
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.75,
+                ];
+          const arrow = new Konva.Line({
+            points: arrowPoints,
+            fill: 'green',
+            stroke: 'green',
+            closed: true,
+            strokeWidth: 2,
+          });
+          this.blockLayer.add(arrow);
+        }
+      }
+      // Draw green arrow if a move is pending
+      if (this.pendingMoveDirection) {
+        const arrowCol = this.block.col + (this.pendingMoveDirection === 'left' ? -1 : 1);
+        const arrowRow = this.block.row;
+        if (arrowCol >= 0 && arrowCol < this.cols) {
+          const arrowPoints =
+            this.pendingMoveDirection === 'right'
+              ? [
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.5,
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.25,
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.75,
+                ]
+              : [
+                  arrowCol * this.cellSize + this.cellSize * 0.25,
+                  arrowRow * this.cellSize + this.cellSize * 0.5,
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.25,
+                  arrowCol * this.cellSize + this.cellSize * 0.75,
+                  arrowRow * this.cellSize + this.cellSize * 0.75,
+                ];
+          const arrow = new Konva.Line({
+            points: arrowPoints,
+            fill: 'green',
+            stroke: 'green',
+            closed: true,
+            strokeWidth: 2,
+          });
+          this.blockLayer.add(arrow);
+        }
+      }
       this.blockLayer.batchDraw();
     }
   }
@@ -184,6 +292,7 @@ export class GameBoard {
     if (targetCol < 0 || targetCol > this.cols - 1) return;
     this.isSliding = true;
     let pixelOffsetX = 0;
+    this.pendingMoveDirection = direction;
     const animate = async () => {
       pixelOffsetX += 4;
       this.render(0, direction === 'left' ? -pixelOffsetX : pixelOffsetX);
@@ -197,9 +306,7 @@ export class GameBoard {
         }
         this.render();
         this.isSliding = false;
-        // Restart falling after horizontal move
-        this.canMove = false;
-        this.startFalling();
+        this.pendingMoveDirection = null;
       }
     };
     animate();

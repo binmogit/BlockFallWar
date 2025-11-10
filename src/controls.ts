@@ -23,7 +23,7 @@ export class Controls {
 
   private setupPlayerListeners() {
     this.keydownHandler = (e: KeyboardEvent) => {
-      if (e.repeat) return;  // Ignore key repeat events
+      if (e.repeat) return; // Ignore key repeat events
       if (e.key === 'a' || e.key === 'ArrowLeft') {
         this.onMove({ direction: 'left' });
       } else if (e.key === 'd' || e.key === 'ArrowRight') {
@@ -33,6 +33,10 @@ export class Controls {
     window.addEventListener('keydown', this.keydownHandler);
   }
 
+  /**
+   * Removes event listeners to prevent memory leaks.
+   * Call this when the game ends, the Controls instance is no longer needed, or the component is unmounted.
+   */
   public dispose() {
     if (this.keydownHandler) {
       window.removeEventListener('keydown', this.keydownHandler);

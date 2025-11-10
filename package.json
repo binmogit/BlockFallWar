@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "color": "^5.0.2",
-    "konva": "^10.0.8",
-    "pixi.js": "^8.14.0"
+    "konva": "^10.0.8"
   }
 }

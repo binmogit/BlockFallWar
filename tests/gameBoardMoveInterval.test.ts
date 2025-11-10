@@ -1,9 +1,12 @@
-
 jest.useFakeTimers();
+
+afterAll(() => {
+  jest.useRealTimers();
+});
 
 class MockGameBoard {
   isSliding = false;
-  canMove = false;
+  canMove = true; // Default to true to match game board initial state
   moveInterval = 100;
   lastMoveTime = 0;
 
@@ -33,16 +36,19 @@ describe('GameBoard move interval logic', () => {
   });
 
   it('should allow move after move interval', () => {
-    board.canMove = true;
-    board.isSliding = false;
-    expect(board.handleMove('left')).toBe(true);
-    jest.advanceTimersByTime(board.moveInterval);
-    expect(board.isSliding).toBe(false);
-    board.canMove = true;
-    expect(board.handleMove('right')).toBe(true);
+  board.canMove = true;
+  board.isSliding = false;
+  const before = Date.now();
+  expect(board.handleMove('left')).toBe(true);
+  expect(typeof board.lastMoveTime).toBe('number');
+  expect(board.lastMoveTime).toBeGreaterThanOrEqual(before);
+  expect(board.lastMoveTime).toBeLessThanOrEqual(Date.now());
+  jest.advanceTimersByTime(board.moveInterval);
+  expect(board.isSliding).toBe(false);
+  expect(board.handleMove('right')).toBe(true);
   });
 
-  it('should allow immediate move after landing in cell', () => {
+  it('should allow move when conditions are met', () => {
     board.canMove = true;
     board.isSliding = false;
     expect(board.handleMove('left')).toBe(true);
