@@ -1,6 +1,7 @@
 import type { Layer } from 'konva/lib/Layer';
-// Konva and Color are only needed for rendering, not for logic/unit tests
+
 // src/block.ts
+// Konva and Color are imported for rendering; both are mocked in unit tests for isolation and compatibility.
 // Represents a single block on the grid
 
 import { Player } from './player';
@@ -25,24 +26,33 @@ export class Block {
   }
 
   /**
-   * Move the block down by incrementing its row.
+   * Move the block down by incrementing its row, with boundary check.
+   * @param maxRows - maximum number of rows (default: 20)
    */
-  moveDown() {
-    this.row += 1;
+  moveDown(maxRows: number = 20) {
+    if (this.row < maxRows - 1) {
+      this.row += 1;
+    }
   }
 
   /**
-   * Move the block left by decrementing its col.
+   * Move the block left by decrementing its col, with boundary check.
+   * @param minCol - minimum column index (default: 0)
    */
-  moveLeft() {
-    this.col -= 1;
+  moveLeft(minCol: number = 0) {
+    if (this.col > minCol) {
+      this.col -= 1;
+    }
   }
 
   /**
-   * Move the block right by incrementing its col.
+   * Move the block right by incrementing its col, with boundary check.
+   * @param maxCols - maximum number of columns (default: 10)
    */
-  moveRight() {
-    this.col += 1;
+  moveRight(maxCols: number = 10) {
+    if (this.col < maxCols - 1) {
+      this.col += 1;
+    }
   }
 }
 

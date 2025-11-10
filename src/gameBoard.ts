@@ -101,8 +101,6 @@ export class GameBoard {
     window.addEventListener('resize', () => this.render());
     this.render();
     this.startTick();
-    this.updateFallIntervalDisplay();
-    this.updateMoveIntervalDisplay();
   }
 
   /**
@@ -116,37 +114,20 @@ export class GameBoard {
       const remaining = Math.max(0, this.fallInterval - elapsed);
       const seconds = (remaining / 1000).toFixed(2);
       // Update label
-      const labelSpan = this.fallIntervalDisplay.querySelector(
-        'span, #interval-label-player1, #interval-label-player2',
-      );
+        const labelSpan = this.fallIntervalDisplay.querySelector('.interval-label');
       if (labelSpan) {
         labelSpan.textContent = `Next fall in: ${seconds}s`;
       } else {
         this.fallIntervalDisplay.textContent = `Next fall in: ${seconds}s`;
       }
       // Update progress bar
-      const bar = this.fallIntervalDisplay.querySelector(
-        'div, #interval-bar-player1, #interval-bar-player2',
-      ) as HTMLElement;
+        const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement;
       if (bar) {
         const progress = 1 - remaining / this.fallInterval;
         bar.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
       }
     }
   }
-
-  /**
-   * Update the move interval time display on the board.
-   */
-  updateMoveIntervalDisplay(): void {
-    // Removed moveIntervalDisplay
-  }
-
-  /**
-   * Render the board and block, with optional pixel offsets for animation.
-   * @param pixelOffsetY - Vertical offset in px for block animation.
-   * @param pixelOffsetX - Horizontal offset in px for block animation.
-   */
   render(pixelOffsetY: number = 0, pixelOffsetX: number = 0) {
     const rect = this.parent.getBoundingClientRect();
     const cellWidth = Math.floor(rect.width / this.cols);
@@ -156,7 +137,6 @@ export class GameBoard {
     const stageHeight = this.cellSize * this.rows;
 
     // Create Konva stage and layers only once
-    const Konva = require('konva').default;
     if (!this.stage) {
       this.boardDiv.innerHTML = '';
       this.stage = new Konva.Stage({
@@ -164,10 +144,12 @@ export class GameBoard {
         width: stageWidth,
         height: stageHeight,
       });
-      this.gridLayer = new Konva.Layer();
-      this.blockLayer = new Konva.Layer();
-      this.stage!.add(this.gridLayer!);
-      this.stage!.add(this.blockLayer!);
+      const gridLayer = new Konva.Layer();
+      const blockLayer = new Konva.Layer();
+      this.gridLayer = gridLayer;
+      this.blockLayer = blockLayer;
+      this.stage.add(gridLayer);
+      this.stage.add(blockLayer);
       // Draw grid once during initialization
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
@@ -180,10 +162,10 @@ export class GameBoard {
             stroke: '#1f2937',
             strokeWidth: 1,
           });
-          this.gridLayer!.add(gridRect);
+          gridLayer.add(gridRect);
         }
       }
-      this.gridLayer!.batchDraw();
+      gridLayer.batchDraw();
     } else {
       this.stage.width(stageWidth);
       this.stage.height(stageHeight);

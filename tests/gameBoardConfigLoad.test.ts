@@ -4,7 +4,13 @@ jest.mock('konva', () => ({
 }));
 jest.mock('color', () => ({
   __esModule: true,
-  default: () => ({ darken: () => ({ hex: () => '#000' }) }),
+  default: () => ({ darken: (amount: number) => ({ hex: () => '#000' }) }),
+}));
+let mockHex = '#000';
+const setMockHex = (hex: string) => { mockHex = hex; };
+jest.mock('color', () => ({
+  __esModule: true,
+  default: () => ({ darken: (amount: number) => ({ hex: () => mockHex }) }),
 }));
 import { GameBoardConfig } from '../src/gameBoard';
 import { GAME_BOARD_DEFAULTS } from '../src/gameBoardConfig';
