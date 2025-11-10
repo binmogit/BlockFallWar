@@ -1,89 +1,8 @@
-import Konva from 'konva';
-import Color from 'color';
+// Konva and Color are only needed for rendering, not for logic/unit tests
 // src/block.ts
 // Represents a single block on the grid
 
 export class Block {
-  /**
-   * Move the block down after a given interval (ms), with cancellation support.
-   * @param interval - Time in ms to wait before moving down.
-   * @returns { promise: Promise<void>, cancel: () => void, timeoutId: number }
-   */
-  moveDownWithInterval(interval: number) {
-    let cancelled = false;
-    let timeoutId: number = -1;
-    const promise = new Promise<void>((resolve) => {
-      timeoutId = window.setTimeout(() => {
-        if (!cancelled) {
-          // Add any game state validation here if needed
-          this.moveDown();
-        }
-        resolve();
-      }, interval);
-    });
-    return {
-      promise,
-      cancel: () => {
-        cancelled = true;
-        clearTimeout(timeoutId);
-      },
-      timeoutId,
-    };
-  }
-
-  /**
-   * Move the block left after a given interval (ms), with cancellation support.
-   * @param interval - Time in ms to wait before moving left.
-   * @returns { promise: Promise<void>, cancel: () => void, timeoutId: number }
-   */
-  moveLeftWithInterval(interval: number) {
-    let cancelled = false;
-    let timeoutId: number = -1;
-    const promise = new Promise<void>((resolve) => {
-      timeoutId = window.setTimeout(() => {
-        if (!cancelled) {
-          // Add any game state validation here if needed
-          this.moveLeft();
-        }
-        resolve();
-      }, interval);
-    });
-    return {
-      promise,
-      cancel: () => {
-        cancelled = true;
-        clearTimeout(timeoutId);
-      },
-      timeoutId,
-    };
-  }
-
-  /**
-   * Move the block right after a given interval (ms), with cancellation support.
-   * @param interval - Time in ms to wait before moving right.
-   * @returns { promise: Promise<void>, cancel: () => void, timeoutId: number }
-   */
-  moveRightWithInterval(interval: number) {
-    let cancelled = false;
-    let timeoutId: number = -1;
-    const promise = new Promise<void>((resolve) => {
-      timeoutId = window.setTimeout(() => {
-        if (!cancelled) {
-          // Add any game state validation here if needed
-          this.moveRight();
-        }
-        resolve();
-      }, interval);
-    });
-    return {
-      promise,
-      cancel: () => {
-        cancelled = true;
-        clearTimeout(timeoutId);
-      },
-      timeoutId,
-    };
-  }
   row: number;
   col: number;
   color: string;
@@ -117,11 +36,14 @@ export class Block {
 }
 
 export function drawBlock(
-  layer: Konva.Layer,
+  layer: any,
   block: Block,
   cellSize: number,
   moveProgress: number = 0, // 0 = just landed, 1 = about to move
 ) {
+  // Only import rendering modules when needed
+  const Konva = require('konva').default;
+  const Color = require('color').default;
   // Clamp progress between 0 and 1
   moveProgress = Math.max(0, Math.min(1, moveProgress));
   const color = block.color;

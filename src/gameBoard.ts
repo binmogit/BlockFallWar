@@ -1,6 +1,6 @@
 // src/gameBoard.ts
 import { Block, drawBlock } from './block';
-import Konva from 'konva';
+// Konva is only needed for rendering, not for logic/config tests
 import { GAME_BOARD_DEFAULTS } from './gameBoardConfig';
 import { Controls, ControlType } from './controls';
 
@@ -47,6 +47,8 @@ export class GameBoardConfig {
  * @property {HTMLElement} intervalDisplay - DOM element for interval display.
  */
 export class GameBoard {
+  private lastFallTime: number = 0;
+  private running: boolean = false;
   rows: number;
   cols: number;
   block: Block;
@@ -62,11 +64,10 @@ export class GameBoard {
   fallIntervalDisplay: HTMLElement;
   moveInterval: number;
   moveIntervalDisplay: HTMLElement;
-  canMove: boolean = false;
   config: GameBoardConfig;
-  private stage: Konva.Stage | null = null;
-  private gridLayer: Konva.Layer | null = null;
-  private blockLayer: Konva.Layer | null = null;
+  private stage: any = null;
+  private gridLayer: any = null;
+  private blockLayer: any = null;
   private pendingMoveDirection: 'left' | 'right' | null = null;
 
   /**
@@ -79,7 +80,7 @@ export class GameBoard {
   constructor(
     parentId: string,
     controlType: ControlType,
-    interval: number = 250,
+    interval: number = GAME_BOARD_DEFAULTS.fallInterval,
     config?: Partial<GameBoardConfig>,
   ) {
     this.config = new GameBoardConfig(config);
@@ -100,7 +101,7 @@ export class GameBoard {
     this.controls = new Controls(controlType, (event) => this.handleMove(event.direction));
     window.addEventListener('resize', () => this.render());
     this.render();
-    this.startFalling();
+    this.startTick();
     this.updateFallIntervalDisplay();
     this.updateMoveIntervalDisplay();
   }
@@ -137,6 +138,7 @@ export class GameBoard {
     const stageHeight = this.cellSize * this.rows;
 
     // Create Konva stage and layers only once
+    const Konva = require('konva').default;
     if (!this.stage) {
       this.boardDiv.innerHTML = '';
       this.stage = new Konva.Stage({
@@ -179,11 +181,11 @@ export class GameBoard {
       drawBlock(this.blockLayer, this.block, this.cellSize, moveProgress);
       // Draw grey arrows by default in both directions
       ['left', 'right'].forEach((dir) => {
-        const arrowCol = this.block.col + (dir === 'right' ? -1 : 1);
+        const arrowCol = this.block.col + (dir === 'right' ? 1 : -1);
         const arrowRow = this.block.row;
         if (arrowCol >= 0 && arrowCol < this.cols) {
           const arrowPoints =
-            dir === 'left'
+            dir === 'right'
               ? [
                   arrowCol * this.cellSize + this.cellSize * 0.75,
                   arrowRow * this.cellSize + this.cellSize * 0.5,
@@ -214,44 +216,12 @@ export class GameBoard {
       });
       // Draw green arrow if a move is pending
       if (this.pendingMoveDirection) {
-        const arrowCol = this.block.col + (this.pendingMoveDirection === 'left' ? -1 : 1);
+        const dir = this.pendingMoveDirection;
+        const arrowCol = this.block.col + (dir === 'right' ? 1 : -1);
         const arrowRow = this.block.row;
         if (arrowCol >= 0 && arrowCol < this.cols) {
           const arrowPoints =
-            this.pendingMoveDirection === 'right'
-              ? [
-                  arrowCol * this.cellSize + this.cellSize * 0.75,
-                  arrowRow * this.cellSize + this.cellSize * 0.5,
-                  arrowCol * this.cellSize + this.cellSize * 0.25,
-                  arrowRow * this.cellSize + this.cellSize * 0.25,
-                  arrowCol * this.cellSize + this.cellSize * 0.25,
-                  arrowRow * this.cellSize + this.cellSize * 0.75,
-                ]
-              : [
-                  arrowCol * this.cellSize + this.cellSize * 0.25,
-                  arrowRow * this.cellSize + this.cellSize * 0.5,
-                  arrowCol * this.cellSize + this.cellSize * 0.75,
-                  arrowRow * this.cellSize + this.cellSize * 0.25,
-                  arrowCol * this.cellSize + this.cellSize * 0.75,
-                  arrowRow * this.cellSize + this.cellSize * 0.75,
-                ];
-          const arrow = new Konva.Line({
-            points: arrowPoints,
-            fill: 'green',
-            stroke: 'green',
-            closed: true,
-            strokeWidth: 2,
-          });
-          this.blockLayer.add(arrow);
-        }
-      }
-      // Draw green arrow if a move is pending
-      if (this.pendingMoveDirection) {
-        const arrowCol = this.block.col + (this.pendingMoveDirection === 'left' ? -1 : 1);
-        const arrowRow = this.block.row;
-        if (arrowCol >= 0 && arrowCol < this.cols) {
-          const arrowPoints =
-            this.pendingMoveDirection === 'right'
+            dir === 'right'
               ? [
                   arrowCol * this.cellSize + this.cellSize * 0.75,
                   arrowRow * this.cellSize + this.cellSize * 0.5,
@@ -287,50 +257,39 @@ export class GameBoard {
    * @param direction - 'left' or 'right'
    */
   handleMove(direction: 'left' | 'right') {
-    if (this.isSliding || !this.canMove) return;
+    if (this.isSliding) return;
     let targetCol = this.block.col + (direction === 'left' ? -1 : 1);
     if (targetCol < 0 || targetCol > this.cols - 1) return;
-    this.isSliding = true;
-    let pixelOffsetX = 0;
     this.pendingMoveDirection = direction;
-    const animate = async () => {
-      pixelOffsetX += 4;
-      this.render(0, direction === 'left' ? -pixelOffsetX : pixelOffsetX);
-      if (pixelOffsetX < this.cellSize) {
-        requestAnimationFrame(animate);
-      } else {
-        if (direction === 'left') {
-          await this.block.moveLeftWithInterval(this.fallInterval);
-        } else {
-          await this.block.moveRightWithInterval(this.fallInterval);
-        }
-        this.render();
-        this.isSliding = false;
-        this.pendingMoveDirection = null;
-      }
-    };
-    animate();
+    if (direction === 'left') {
+      this.block.moveLeft();
+    } else {
+      this.block.moveRight();
+    }
+    this.render();
+    // Use a short timeout to allow the green arrow to be visible for a frame
+    setTimeout(() => {
+      this.pendingMoveDirection = null;
+      this.render();
+    }, 50);
   }
 
   /**
-   * Start the block falling loop with animation.
+   * Start the game tick loop.
    */
-  startFalling() {
-    const fall = () => {
-      if (this.block.row < this.rows - 1) {
-        this.slideBlockDown(() => {
-          // After sliding down, open move window for moveInterval ms
-          this.canMove = true;
-          this.moveIntervalDisplay.classList.add('bg-blue-900');
-          setTimeout(() => {
-            this.canMove = false;
-            this.moveIntervalDisplay.classList.remove('bg-blue-900');
-          }, this.moveInterval);
-          setTimeout(fall, this.fallInterval);
-        });
+  startTick() {
+    this.running = true;
+    this.lastFallTime = performance.now();
+    const tick = (now: number) => {
+      if (!this.running) return;
+      // Only move block down if enough time has passed
+      if (this.block.row < this.rows - 1 && now - this.lastFallTime >= this.fallInterval) {
+        this.slideBlockDown();
+        this.lastFallTime = now;
       }
+      requestAnimationFrame(tick);
     };
-    setTimeout(fall, this.fallInterval);
+    requestAnimationFrame(tick);
   }
 
   /**
@@ -342,27 +301,11 @@ export class GameBoard {
    */
   slideBlockDown(callback?: () => void) {
     if (this.isSliding) return;
-    this.isSliding = true;
-    let pixelOffsetY = 0;
-    const animate = () => {
-      pixelOffsetY += 4;
-      this.render(pixelOffsetY, 0);
-      if (pixelOffsetY < this.cellSize) {
-        requestAnimationFrame(animate);
-      } else {
-        this.block.moveDown();
-        this.render();
-        this.isSliding = false;
-        // Only allow left/right movement during moveInterval after landing
-        this.canMove = true;
-        this.moveIntervalDisplay.classList.add('bg-blue-900');
-        setTimeout(() => {
-          this.canMove = false;
-          this.moveIntervalDisplay.classList.remove('bg-blue-900');
-          if (callback) callback();
-        }, this.moveInterval);
-      }
-    };
-    animate();
+    this.block.moveDown();
+    this.render();
+    // Optionally show/hide move window UI if desired
+    this.moveIntervalDisplay.classList.add('bg-blue-900');
+    this.moveIntervalDisplay.classList.remove('bg-blue-900');
+    if (callback) callback();
   }
 }

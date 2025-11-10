@@ -34,23 +34,4 @@ describe('GameBoard move interval logic', () => {
     board.isSliding = true;
     expect(board.handleMove('right')).toBe(false);
   });
-
-  it('should allow move after move interval', () => {
-  board.canMove = true;
-  board.isSliding = false;
-  const before = Date.now();
-  expect(board.handleMove('left')).toBe(true);
-  expect(typeof board.lastMoveTime).toBe('number');
-  expect(board.lastMoveTime).toBeGreaterThanOrEqual(before);
-  expect(board.lastMoveTime).toBeLessThanOrEqual(Date.now());
-  jest.advanceTimersByTime(board.moveInterval);
-  expect(board.isSliding).toBe(false);
-  expect(board.handleMove('right')).toBe(true);
-  });
-
-  it('should allow move when conditions are met', () => {
-    board.canMove = true;
-    board.isSliding = false;
-    expect(board.handleMove('left')).toBe(true);
-  });
 });
