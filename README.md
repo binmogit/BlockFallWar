@@ -1,6 +1,6 @@
 # BlockFallWar
 
-BlockFallWar is a browser-based Tetris PvP game built with TypeScript, TailwindCSS, and Webpack. The project is designed for rapid prototyping and UI iteration, with all game logic running in the browser.
+BlockFallWar is a browser-based block fall PvP game built with TypeScript, TailwindCSS, and Webpack. The project is designed for rapid prototyping and UI iteration, with all game logic running in the browser.
 
 ## Features
 - Two-player block fall battle
