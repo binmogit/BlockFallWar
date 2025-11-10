@@ -65,7 +65,8 @@ export class GameBoard {
   canMove: boolean = false;
   config: GameBoardConfig;
   private stage: Konva.Stage | null = null;
-  private layer: Konva.Layer | null = null;
+  private gridLayer: Konva.Layer | null = null;
+  private blockLayer: Konva.Layer | null = null;
 
   /**
    * Create a new GameBoard instance.
@@ -128,7 +129,7 @@ export class GameBoard {
     const stageWidth = this.cellSize * this.cols;
     const stageHeight = this.cellSize * this.rows;
 
-    // Create Konva stage and layer only once
+    // Create Konva stage and layers only once
     if (!this.stage) {
       this.boardDiv.innerHTML = '';
       this.stage = new Konva.Stage({
@@ -136,16 +137,11 @@ export class GameBoard {
         width: stageWidth,
         height: stageHeight,
       });
-      this.layer = new Konva.Layer();
-      this.stage.add(this.layer);
-    } else {
-      this.stage.width(stageWidth);
-      this.stage.height(stageHeight);
-    }
-
-    if (this.layer) {
-      this.layer.destroyChildren();
-      // Draw grid
+      this.gridLayer = new Konva.Layer();
+      this.blockLayer = new Konva.Layer();
+      this.stage.add(this.gridLayer);
+      this.stage.add(this.blockLayer);
+      // Draw grid once during initialization
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
           const gridRect = new Konva.Rect({
@@ -157,12 +153,20 @@ export class GameBoard {
             stroke: '#1f2937',
             strokeWidth: 1,
           });
-          this.layer.add(gridRect);
+          this.gridLayer.add(gridRect);
         }
       }
+      this.gridLayer.batchDraw();
+    } else {
+      this.stage.width(stageWidth);
+      this.stage.height(stageHeight);
+    }
+
+    if (this.blockLayer) {
+      this.blockLayer.destroyChildren();
       // Draw block
-      drawBlock(this.layer, this.block, this.cellSize, pixelOffsetY > 0 || pixelOffsetX !== 0);
-      this.layer.batchDraw();
+  drawBlock(this.blockLayer, this.block, this.cellSize, pixelOffsetY > 0 || pixelOffsetX !== 0);
+      this.blockLayer.batchDraw();
     }
   }
 
