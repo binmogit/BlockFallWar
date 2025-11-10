@@ -5,6 +5,7 @@ import type { Layer } from 'konva/lib/Layer';
 // Represents a single block on the grid
 
 import { Player } from './player';
+import { BLOCK_DEFAULTS } from './blockConfig';
 import Konva from 'konva';
 import Color from 'color';
 
@@ -29,19 +30,30 @@ export class Block {
     return clamped;
   }
   /**
-   * Spawn a block at the top row (row 0) with given column and optional color.
+   * Spawn a block at the top row (row 0) with given column and optional color, fallInterval, and moveInterval.
    */
   static spawnAtTop(col: number, player: Player) {
+    // Use defaults for fallInterval and moveInterval
     return new Block(0, col, player.color);
   }
   row: number;
   col: number;
   color: string;
+  fallInterval: number;
+  moveInterval: number;
 
-  constructor(row: number, col: number, color: string = '#f59e42') {
+  constructor(
+    row: number,
+    col: number,
+    color: string = '#f59e42',
+    fallInterval: number = BLOCK_DEFAULTS.fallInterval,
+    moveInterval: number = BLOCK_DEFAULTS.moveInterval,
+  ) {
     this.row = row;
     this.col = col;
     this.color = color;
+    this.fallInterval = fallInterval;
+    this.moveInterval = moveInterval;
   }
 
   /**

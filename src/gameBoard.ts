@@ -7,24 +7,18 @@ import { GAME_BOARD_DEFAULTS } from './gameBoardConfig';
 import { Controls, ControlType } from './controls';
 
 /**
- * GameBoardConfig holds the configuration for the GameBoard, including grid size and interval timings.
+ * GameBoardConfig holds the configuration for the GameBoard (grid size)
  *
  * @class GameBoardConfig
  * @property {number} rows - Number of grid rows.
  * @property {number} cols - Number of grid columns.
- * @property {number} fallInterval - Interval time in ms for block falling.
- * @property {number} moveInterval - Interval time in ms for lateral block movement.
  */
 export class GameBoardConfig {
   rows: number;
   cols: number;
-  fallInterval: number;
-  moveInterval: number;
   constructor(config?: Partial<GameBoardConfig>) {
     this.rows = config?.rows ?? GAME_BOARD_DEFAULTS.rows;
     this.cols = config?.cols ?? GAME_BOARD_DEFAULTS.cols;
-    this.fallInterval = config?.fallInterval ?? GAME_BOARD_DEFAULTS.fallInterval;
-    this.moveInterval = config?.moveInterval ?? GAME_BOARD_DEFAULTS.moveInterval;
   }
 }
 
@@ -34,7 +28,7 @@ export class GameBoardConfig {
  * @class GameBoard
  * @param {string} parentId - The DOM id of the board container.
  * @param {ControlType} controlType - 'player' or 'bot' for controls.
- * @param {number} [interval=250] - Interval time in ms for block falling.
+// ...existing code...
  * @param {Partial<GameBoardConfig>} [config] - Optional config overrides.
  *
  * @property {number} rows - Number of grid rows.
@@ -45,7 +39,6 @@ export class GameBoardConfig {
  * @property {Controls} controls - Controls handler for player/bot.
  * @property {number} cellSize - Size of each cell in px.
  * @property {boolean} isSliding - True if block is animating.
- * @property {number} interval - Block falling interval in ms.
  * @property {HTMLElement} intervalDisplay - DOM element for interval display.
  */
 export class GameBoard {
@@ -64,9 +57,8 @@ export class GameBoard {
   currentRow: number = 0;
   pixelOffsetY: number = 0;
   pixelOffsetX: number = 0;
-  fallInterval: number;
+  // ...existing code...
   fallIntervalDisplay: HTMLElement;
-  moveInterval: number;
   config: GameBoardConfig;
   private stage: Konva.Stage | null = null;
   private gridLayer: Konva.Layer | null = null;
@@ -77,20 +69,13 @@ export class GameBoard {
    * Create a new GameBoard instance.
    * @param parentId - The DOM id of the board container.
    * @param controlType - 'player' or 'bot' for controls.
-   * @param interval - Interval time in ms for block falling.
+   * ...existing code...
    * @param config - Optional config overrides.
    */
-  constructor(
-    parentId: string,
-    controlType: ControlType,
-    interval: number = GAME_BOARD_DEFAULTS.fallInterval,
-    config?: Partial<GameBoardConfig>,
-  ) {
+  constructor(parentId: string, controlType: ControlType, config?: Partial<GameBoardConfig>) {
     this.config = new GameBoardConfig(config);
     this.rows = this.config.rows;
     this.cols = this.config.cols;
-    this.fallInterval = interval ?? this.config.fallInterval;
-    this.moveInterval = this.config.moveInterval;
     // ...existing DOM logic...
     this.parent = document.getElementById(parentId)!;
     this.boardDiv = this.parent.querySelector('.board')!;
@@ -111,7 +96,7 @@ export class GameBoard {
     if (this.fallIntervalDisplay) {
       const now = performance.now();
       const elapsed = now - this.lastFallTime;
-      const remaining = Math.max(0, this.fallInterval - elapsed);
+      const remaining = Math.max(0, this.block.fallInterval - elapsed);
       // Throttle updates to at most every 100ms, except when remaining === 0
       if (remaining !== 0 && now - this.lastFallDisplayUpdate < 100) {
         return;
@@ -128,7 +113,7 @@ export class GameBoard {
       // Update progress bar
       const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement;
       if (bar) {
-        const progress = 1 - remaining / this.fallInterval;
+        const progress = 1 - remaining / this.block.fallInterval;
         bar.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
       }
     }
@@ -286,7 +271,7 @@ export class GameBoard {
     const tick = (now: number) => {
       if (!this.running) return;
       // Only move block down if enough time has passed
-      if (this.block.row < this.rows - 1 && now - this.lastFallTime >= this.fallInterval) {
+      if (this.block.row < this.rows - 1 && now - this.lastFallTime >= this.block.fallInterval) {
         this.slideBlockDown();
         this.lastFallTime = now;
       }

@@ -1,4 +1,5 @@
 import { GameBoard } from './gameBoard';
+import { BLOCK_DEFAULTS } from './blockConfig';
 import './style.css';
 
 // Only setup control buttons for now
