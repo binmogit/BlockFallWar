@@ -31,10 +31,17 @@ export class Block {
    * @returns true if moved, false if at boundary
    */
   moveDown(maxRows: number): boolean {
-    if (this.row < maxRows - 1) {
+    // Guard: maxRows must be positive and at least 1
+    if (typeof maxRows !== 'number' || maxRows <= 0) return false;
+    const maxRowIdx = Math.max(0, maxRows - 1);
+    if (this.row < maxRowIdx) {
       this.row += 1;
+      // Clamp to maxRowIdx
+      this.row = Math.min(this.row, maxRowIdx);
       return true;
     }
+    // Always clamp to maxRowIdx if out of bounds
+    this.row = Math.min(this.row, maxRowIdx);
     return false;
   }
 
@@ -44,10 +51,16 @@ export class Block {
    * @returns true if moved, false if at boundary
    */
   moveLeft(minCol: number): boolean {
+    // Guard: minCol must be >= 0
+    if (typeof minCol !== 'number' || minCol < 0) return false;
     if (this.col > minCol) {
       this.col -= 1;
+      // Clamp to minCol
+      this.col = Math.max(this.col, minCol);
       return true;
     }
+    // Always clamp to minCol if out of bounds
+    this.col = Math.max(this.col, minCol);
     return false;
   }
 
@@ -57,10 +70,17 @@ export class Block {
    * @returns true if moved, false if at boundary
    */
   moveRight(maxCols: number): boolean {
-    if (this.col < maxCols - 1) {
+    // Guard: maxCols must be positive and at least 1
+    if (typeof maxCols !== 'number' || maxCols <= 0) return false;
+    const maxColIdx = Math.max(0, maxCols - 1);
+    if (this.col < maxColIdx) {
       this.col += 1;
+      // Clamp to maxColIdx
+      this.col = Math.min(this.col, maxColIdx);
       return true;
     }
+    // Always clamp to maxColIdx if out of bounds
+    this.col = Math.min(this.col, maxColIdx);
     return false;
   }
 }

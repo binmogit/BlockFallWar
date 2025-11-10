@@ -22,9 +22,11 @@ export class Player {
         return '#3b82f6';
       case 'fakeplayer':
         return '#10b981';
-      default:
-        return '#f59e42';
     }
+    // Exhaustiveness check: if we reach here, type is not handled
+    // This will cause a compile error if a new PlayerType is added and not handled above
+    const _exhaustiveCheck: never = type;
+    throw new Error(`Unhandled PlayerType: ${type}`);
   }
 
   static create(type: PlayerType, name?: string): Player {

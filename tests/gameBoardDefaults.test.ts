@@ -8,7 +8,8 @@ export const setMockHex = (hex: string) => {
 };
 jest.mock('color', () => ({
   __esModule: true,
-  default: () => ({ darken: (amount: number) => ({ hex: () => mockHex }) }),
+  // The 'amount' parameter to darken is intentionally ignored in these tests
+  default: () => ({ darken: (_amount: number) => ({ hex: () => mockHex }) }),
 }));
 
 beforeEach(() => {

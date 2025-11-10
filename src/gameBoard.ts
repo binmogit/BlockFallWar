@@ -49,6 +49,7 @@ export class GameBoardConfig {
  * @property {HTMLElement} intervalDisplay - DOM element for interval display.
  */
 export class GameBoard {
+  private lastFallDisplayUpdate: number = 0;
   private lastFallTime: number = 0;
   private running: boolean = false;
   rows: number;
@@ -108,10 +109,14 @@ export class GameBoard {
    */
   updateFallIntervalDisplay() {
     if (this.fallIntervalDisplay) {
-      // Calculate remaining time before block falls in seconds
       const now = performance.now();
       const elapsed = now - this.lastFallTime;
       const remaining = Math.max(0, this.fallInterval - elapsed);
+      // Throttle updates to at most every 100ms, except when remaining === 0
+      if (remaining !== 0 && now - this.lastFallDisplayUpdate < 100) {
+        return;
+      }
+      this.lastFallDisplayUpdate = now;
       const seconds = (remaining / 1000).toFixed(2);
       // Update label
       const labelSpan = this.fallIntervalDisplay.querySelector('.interval-label');
