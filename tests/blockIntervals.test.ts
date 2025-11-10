@@ -34,4 +34,10 @@ describe('Block interval validation', () => {
     expect(b.fallInterval).toBe(123);
     expect(b.moveInterval).toBe(100);
   });
+
+  it('accepts integer intervals without modification', () => {
+    const b = new Block(0, 0, '#fff', 100, 200);
+    expect(b.fallInterval).toBe(100);
+    expect(b.moveInterval).toBe(200);
+  });
 });

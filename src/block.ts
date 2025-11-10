@@ -34,10 +34,10 @@ export class Block {
     return clamped;
   }
   /**
-   * Spawn a block at the top row (row 0) for the given column and player.
+   * Spawn a block at the top row (row 0) for the given column.
    *
    * @param col - column index where the block will be spawned
-   *
+   * @returns a new Block positioned at row 0 and the specified column
    */
   static spawnAtTop(col: number) {
     return new Block(0, col);
@@ -63,7 +63,7 @@ export class Block {
   constructor(
     row: number,
     col: number,
-    color: string = BLOCK_DEFAULTS.red,
+  color: string = BLOCK_DEFAULTS.defaultColor,
     fallInterval: number = BLOCK_DEFAULTS.fallInterval,
     moveInterval: number = BLOCK_DEFAULTS.moveInterval,
   ) {

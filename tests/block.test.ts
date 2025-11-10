@@ -15,16 +15,14 @@ describe('Block', () => {
     const playerTypes = ['player', 'bot', 'fakeplayer'] as const;
     playerTypes.forEach((type) => {
       it(`spawns at top row for player type '${type}'`, () => {
-        const player = Player.create(type);
         const block = Block.spawnAtTop(4);
         expect(block.row).toBe(0);
         expect(block.col).toBe(4);
-        expect(block.color).toBe(BLOCK_DEFAULTS.red);
+  expect(block.color).toBe(BLOCK_DEFAULTS.defaultColor);
       });
     });
 
     it('spawns at col 0 and maxColumn', () => {
-      const player = Player.create('player');
       const block0 = Block.spawnAtTop(0);
       expect(block0.col).toBe(0);
       const blockMax = Block.spawnAtTop(9);
@@ -32,7 +30,6 @@ describe('Block', () => {
     });
 
     it('does not clamp col out of range (caller responsibility)', () => {
-      const player = Player.create('player');
       const blockNeg = Block.spawnAtTop(-1);
       expect(blockNeg.col).toBe(-1);
       const blockOver = Block.spawnAtTop(100);

@@ -13,7 +13,7 @@ export class Player {
   }
 
   static create(type: PlayerType, name?: string): Player {
-    // Use the centralized block default color so player and block defaults stay in sync.
+    // Factory: create a Player instance for the given type and optional name.
     return new Player(type, name);
   }
 }
