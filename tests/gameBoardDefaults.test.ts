@@ -1,3 +1,11 @@
+jest.mock('konva', () => ({
+  __esModule: true,
+  default: {},
+}));
+jest.mock('color', () => ({
+  __esModule: true,
+  default: () => ({ darken: () => ({ hex: () => '#000' }) }),
+}));
 import { GameBoardConfig } from '../src/gameBoard';
 import { GAME_BOARD_DEFAULTS } from '../src/gameBoardConfig';
 

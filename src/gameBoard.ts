@@ -1,6 +1,8 @@
 // src/gameBoard.ts
 import { Block, drawBlock } from './block';
+import { Player, PlayerType } from './player';
 // Konva is only needed for rendering, not for logic/config tests
+import Konva from 'konva';
 import { GAME_BOARD_DEFAULTS } from './gameBoardConfig';
 import { Controls, ControlType } from './controls';
 
@@ -52,6 +54,7 @@ export class GameBoard {
   rows: number;
   cols: number;
   block: Block;
+  player: Player;
   parent: HTMLElement;
   boardDiv: HTMLElement;
   controls: Controls;
@@ -63,11 +66,10 @@ export class GameBoard {
   fallInterval: number;
   fallIntervalDisplay: HTMLElement;
   moveInterval: number;
-  moveIntervalDisplay: HTMLElement;
   config: GameBoardConfig;
-  private stage: any = null;
-  private gridLayer: any = null;
-  private blockLayer: any = null;
+  private stage: Konva.Stage | null = null;
+  private gridLayer: Konva.Layer | null = null;
+  private blockLayer: Konva.Layer | null = null;
   private pendingMoveDirection: 'left' | 'right' | null = null;
 
   /**
@@ -91,13 +93,10 @@ export class GameBoard {
     // ...existing DOM logic...
     this.parent = document.getElementById(parentId)!;
     this.boardDiv = this.parent.querySelector('.board')!;
-    this.block = new Block(0, Math.floor(this.cols / 2));
+    // Create player for this board
+    this.player = Player.create(controlType as PlayerType);
+    this.block = Block.spawnAtTop(Math.floor(this.cols / 2), this.player);
     this.fallIntervalDisplay = this.parent.querySelector('[id^=interval-]')!;
-    this.moveIntervalDisplay = document.createElement('div');
-    this.moveIntervalDisplay.className =
-      'absolute left-1/2 -translate-x-1/2 top-[60%] bg-gray-900 text-white px-2 py-1 rounded shadow text-xs';
-    this.moveIntervalDisplay.textContent = `${this.moveInterval}ms move window`;
-    this.fallIntervalDisplay.insertAdjacentElement('afterend', this.moveIntervalDisplay);
     this.controls = new Controls(controlType, (event) => this.handleMove(event.direction));
     window.addEventListener('resize', () => this.render());
     this.render();
@@ -111,7 +110,28 @@ export class GameBoard {
    */
   updateFallIntervalDisplay() {
     if (this.fallIntervalDisplay) {
-      this.fallIntervalDisplay.textContent = `${this.fallInterval}ms`;
+      // Calculate remaining time before block falls in seconds
+      const now = performance.now();
+      const elapsed = now - this.lastFallTime;
+      const remaining = Math.max(0, this.fallInterval - elapsed);
+      const seconds = (remaining / 1000).toFixed(2);
+      // Update label
+      const labelSpan = this.fallIntervalDisplay.querySelector(
+        'span, #interval-label-player1, #interval-label-player2',
+      );
+      if (labelSpan) {
+        labelSpan.textContent = `Next fall in: ${seconds}s`;
+      } else {
+        this.fallIntervalDisplay.textContent = `Next fall in: ${seconds}s`;
+      }
+      // Update progress bar
+      const bar = this.fallIntervalDisplay.querySelector(
+        'div, #interval-bar-player1, #interval-bar-player2',
+      ) as HTMLElement;
+      if (bar) {
+        const progress = 1 - remaining / this.fallInterval;
+        bar.style.width = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+      }
     }
   }
 
@@ -119,9 +139,7 @@ export class GameBoard {
    * Update the move interval time display on the board.
    */
   updateMoveIntervalDisplay(): void {
-    if (this.moveIntervalDisplay) {
-      this.moveIntervalDisplay.textContent = `${this.moveInterval}ms move window`;
-    }
+    // Removed moveIntervalDisplay
   }
 
   /**
@@ -148,8 +166,8 @@ export class GameBoard {
       });
       this.gridLayer = new Konva.Layer();
       this.blockLayer = new Konva.Layer();
-      this.stage.add(this.gridLayer);
-      this.stage.add(this.blockLayer);
+      this.stage!.add(this.gridLayer!);
+      this.stage!.add(this.blockLayer!);
       // Draw grid once during initialization
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
@@ -162,10 +180,10 @@ export class GameBoard {
             stroke: '#1f2937',
             strokeWidth: 1,
           });
-          this.gridLayer.add(gridRect);
+          this.gridLayer!.add(gridRect);
         }
       }
-      this.gridLayer.batchDraw();
+      this.gridLayer!.batchDraw();
     } else {
       this.stage.width(stageWidth);
       this.stage.height(stageHeight);
@@ -287,6 +305,7 @@ export class GameBoard {
         this.slideBlockDown();
         this.lastFallTime = now;
       }
+      this.updateFallIntervalDisplay();
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -303,9 +322,6 @@ export class GameBoard {
     if (this.isSliding) return;
     this.block.moveDown();
     this.render();
-    // Optionally show/hide move window UI if desired
-    this.moveIntervalDisplay.classList.add('bg-blue-900');
-    this.moveIntervalDisplay.classList.remove('bg-blue-900');
     if (callback) callback();
   }
 }

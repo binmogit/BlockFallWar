@@ -1,8 +1,19 @@
+import type { Layer } from 'konva/lib/Layer';
 // Konva and Color are only needed for rendering, not for logic/unit tests
 // src/block.ts
 // Represents a single block on the grid
 
+import { Player } from './player';
+import Konva from 'konva';
+import Color from 'color';
+
 export class Block {
+  /**
+   * Spawn a block at the top row (row 0) with given column and optional color.
+   */
+  static spawnAtTop(col: number, player: Player) {
+    return new Block(0, col, player.color);
+  }
   row: number;
   col: number;
   color: string;
@@ -36,14 +47,12 @@ export class Block {
 }
 
 export function drawBlock(
-  layer: any,
+  layer: Layer,
   block: Block,
   cellSize: number,
   moveProgress: number = 0, // 0 = just landed, 1 = about to move
 ) {
-  // Only import rendering modules when needed
-  const Konva = require('konva').default;
-  const Color = require('color').default;
+  // Konva and Color are imported at the top of the file
   // Clamp progress between 0 and 1
   moveProgress = Math.max(0, Math.min(1, moveProgress));
   const color = block.color;

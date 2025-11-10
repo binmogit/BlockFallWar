@@ -1,9 +1,20 @@
+jest.mock('konva', () => ({
+  __esModule: true,
+  default: {},
+}));
+jest.mock('color', () => ({
+  __esModule: true,
+  default: () => ({ darken: () => ({ hex: () => '#000' }) }),
+}));
 import { Block } from '../src/block';
+import { Player } from '../src/player';
 
 describe('Block', () => {
-  it('initializes with correct position', () => {
-    const block = new Block(0, 5);
+  it('spawns at top row using spawnAtTop', () => {
+    const player = Player.create('player');
+    const block = Block.spawnAtTop(3, player);
     expect(block.row).toBe(0);
-    expect(block.col).toBe(5);
+    expect(block.col).toBe(3);
+    expect(block.color).toBe(player.color);
   });
 });
