@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlockFallWar - Block Fall PvP</title>
+    <link href="./style.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <div class="flex flex-col justify-center items-center gap-4 w-screen h-screen">
+      <div class="flex flex-1 justify-center items-center gap-4 w-full">
+        <div id="board-player1" class="flex flex-1 h-full bg-gray-800 rounded relative">
+          <div
+            id="interval-player1"
+            class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-2 py-1 rounded-r shadow text-xs w-32"
+          >
+            <div
+              class="interval-bar absolute left-0 top-0 h-full bg-blue-700 rounded-l"
+              style="width: 0%; opacity: 0.3; z-index: 0"
+            ></div>
+            <span class="interval-label relative z-10">250ms</span>
+          </div>
+          <div class="board flex justify-center items-center w-full h-full"></div>
+        </div>
+        <div id="board-player2" class="flex flex-1 h-full bg-gray-800 rounded relative">
+          <div
+            id="interval-player2"
+            class="absolute left-0 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-2 py-1 rounded-r shadow text-xs w-32"
+          >
+            <div
+              class="interval-bar absolute left-0 top-0 h-full bg-blue-700 rounded-l"
+              style="width: 0%; opacity: 0.3; z-index: 0"
+            ></div>
+            <span class="interval-label relative z-10">250ms</span>
+          </div>
+          <div class="board flex justify-center items-center w-full h-full"></div>
+        </div>
+      </div>
+      <div class="flex gap-4 bg-gray-700 justify-center rounded w-full">
+        <button
+          id="start-pvp"
+          class="justify-center flex w-1/4 bg-blue-500 hover:bg-blue-700 text-white rounded"
+        >
+          Player vs Player
+        </button>
+        <button
+          id="start-bot"
+          class="justify-center flex w-1/4 bg-green-500 hover:bg-green-700 text-white rounded"
+        >
+          Player vs Bot
+        </button>
+      </div>
+    </div>
+    <script src="./bundle.js"></script>
+  </body>
+</html>
