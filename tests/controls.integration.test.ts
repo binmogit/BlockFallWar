@@ -43,7 +43,7 @@ describe('Controls (injectable event target)', () => {
   test('botMove throws on player controls and works on bot controls', async () => {
     const onMove = jest.fn();
     const playerControls = new Controls('player', onMove, null);
-    await expect(playerControls.botMove('left' as any)).rejects.toThrow();
+    await expect(playerControls.botMove('left')).rejects.toThrow();
 
     const botControls = new Controls('bot', onMove, null);
     await botControls.botMove('right');

@@ -4,7 +4,6 @@ jest.mock('konva', () => ({
 }));
 import { resetMockHex } from './utils/colorMock';
 import { Block } from '../src/block';
-import { Player } from '../src/player';
 import { BLOCK_DEFAULTS } from '../src/blockConfig';
 
 beforeEach(() => {

@@ -11,29 +11,67 @@ export interface TickService {
   now(): number;
 }
 
+// ClockState holds internal monotonic clock bookkeeping for a TickService.
+// Keep as an internal type to avoid expanding the module's public API surface.
+type ClockState = {
+  hrTimeStart?: bigint;
+  startTime?: number;
+  lastNow?: number;
+};
+
 export function createRealTickService(): TickService {
+  // Keep monotonic clock state inside a small closure object to avoid
+  // polluting globalThis and make the typing explicit.
+  const state: ClockState = {};
+
   return {
     setTimeout: (cb, ms) => {
-      return (global as any).setTimeout(cb, ms) as unknown as TickId;
+      const g = globalThis as unknown as { setTimeout: (f: () => void, t: number) => number };
+      return g.setTimeout(cb, ms) as unknown as TickId;
     },
     clearTimeout: (id) => {
-      (global as any).clearTimeout(id as unknown as number);
+      const g = globalThis as unknown as { clearTimeout: (n: number) => void };
+      g.clearTimeout(id as unknown as number);
     },
     setInterval: (cb, ms) => {
-      return (global as any).setInterval(cb, ms) as unknown as TickId;
+      const g = globalThis as unknown as { setInterval: (f: () => void, t: number) => number };
+      return g.setInterval(cb, ms) as unknown as TickId;
     },
     clearInterval: (id) => {
-      (global as any).clearInterval(id as unknown as number);
+      const g = globalThis as unknown as { clearInterval: (n: number) => void };
+      g.clearInterval(id as unknown as number);
     },
     now: () => {
+      // Prefer performance.now() when available (monotonic in browsers)
       if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
         return performance.now();
       }
-      // Fallback: track relative time with Date.now()
-      if (!(globalThis as any).__tickServiceStartTime) {
-        (globalThis as any).__tickServiceStartTime = Date.now();
+
+      // In Node.js prefer process.hrtime.bigint() for a high-resolution, monotonic clock
+      if (typeof process !== 'undefined') {
+        try {
+          // Narrow process to a shape that may include hrtime.bigint()
+          const proc = process as unknown as { hrtime?: { bigint?: () => bigint } };
+          if (proc.hrtime && typeof proc.hrtime.bigint === 'function') {
+            if (state.hrTimeStart === undefined) state.hrTimeStart = proc.hrtime.bigint();
+            const ns: bigint = proc.hrtime.bigint() - state.hrTimeStart!;
+            const ms = Number(ns / BigInt(1_000_000));
+            if (typeof state.lastNow === 'number' && ms < state.lastNow) return state.lastNow;
+            state.lastNow = ms;
+            return ms;
+          }
+        } catch {
+          // fall through to Date.now() fallback
+        }
       }
-      return Date.now() - (globalThis as any).__tickServiceStartTime;
+
+      // Final fallback: Date.now() relative to a start time. Date.now() is not monotonic
+      // on some platforms; guard against going backwards by clamping to the last value.
+      if (state.startTime === undefined) state.startTime = Date.now();
+      const candidate = Date.now() - state.startTime;
+      if (typeof state.lastNow === 'number' && candidate < state.lastNow) return state.lastNow;
+      state.lastNow = candidate;
+      return candidate;
     },
   };
 }
@@ -42,12 +80,16 @@ export function createRealTickService(): TickService {
  * MockTickService: virtual time, deterministic.
  * - Use advance(ms) to move the clock and fire due callbacks.
  * - now() returns the virtual time in ms.
+ *
+ * NOTE: intervals of 0ms are not supported because they would reschedule
+ * immediately at the same virtual time and can cause infinite loops when
+ * advancing time. The minimum allowed interval is 1ms.
  */
 export class MockTickService implements TickService {
   private nextId = 1;
   private nowMs = 0;
   // schedule entries: id -> {time, cb, type, interval}
-  private schedule = new Map<
+  private readonly schedule = new Map<
     TickId,
     { time: number; cb: () => void; type: 'timeout' | 'interval'; interval?: number }
   >();
@@ -58,6 +100,8 @@ export class MockTickService implements TickService {
 
   setTimeout(cb: () => void, ms: number): TickId {
     const id = this.nextId++;
+    // timeouts may be scheduled for the same ms (0ms allowed) — use floor
+    // and allow 0 here since a one-shot scheduled now is fine.
     const time = this.nowMs + Math.max(0, Math.floor(ms));
     this.schedule.set(id, { time, cb, type: 'timeout' });
     return id;
@@ -69,7 +113,10 @@ export class MockTickService implements TickService {
 
   setInterval(cb: () => void, ms: number): TickId {
     const id = this.nextId++;
-    const interval = Math.max(0, Math.floor(ms));
+    // Enforce a minimum positive interval of 1ms. A 0ms interval would
+    // reschedule at the same virtual time and can create an infinite loop
+    // during advance()/runToIdle(). Use Math.floor to normalize fractional ms.
+    const interval = Math.max(1, Math.floor(ms));
     const time = this.nowMs + interval;
     this.schedule.set(id, { time, cb, type: 'interval', interval });
     return id;

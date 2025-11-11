@@ -2,7 +2,7 @@ jest.mock('konva', () => ({
   __esModule: true,
   default: {},
 }));
-import { setMockHex, resetMockHex } from './utils/colorMock';
+import { resetMockHex } from './utils/colorMock';
 
 beforeEach(() => {
   resetMockHex();

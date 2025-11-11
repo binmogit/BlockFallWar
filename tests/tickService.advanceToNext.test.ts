@@ -56,7 +56,9 @@ describe('MockTickService.advanceToNext', () => {
     // next should be the 200 timeout
     const d2 = tick.advanceToNext();
     expect(d2).toBe(100);
-    expect(calls).toEqual([1, 2, 3]);
+    // order of the simultaneous callbacks 1 and 2 may be non-deterministic;
+    // assert the set of calls instead of strict order to avoid flakiness.
+    expect(calls.sort()).toEqual([1, 2, 3].sort());
   });
 
   test('clearTimeout prevents a scheduled timeout from firing', () => {

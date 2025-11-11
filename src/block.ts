@@ -4,7 +4,6 @@ import type { Layer } from 'konva/lib/Layer';
 // Konva and Color are imported for rendering; both are mocked in unit tests for isolation and compatibility.
 // Represents a single block on the grid
 
-import { Player } from './player';
 import { BLOCK_DEFAULTS } from './blockConfig';
 import Konva from 'konva';
 import Color from 'color';

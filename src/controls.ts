@@ -12,7 +12,7 @@ export class Controls {
   onMove: (event: ControlEvent) => void | Promise<void>;
   private keydownHandler?: EventListener;
   // Use the standard DOM EventTarget so we can accept `window` directly without casts.
-  private eventTarget: EventTarget | null;
+  private readonly eventTarget: EventTarget | null;
 
   /**
    * Controls constructor.
@@ -47,20 +47,17 @@ export class Controls {
       const e = evt as KeyboardEvent;
       if (e.repeat) return; // Ignore key repeat events
       if (e.key === 'a' || e.key === 'ArrowLeft') {
-        this.onMove({ direction: 'left' });
+        void this.onMove({ direction: 'left' });
       } else if (e.key === 'd' || e.key === 'ArrowRight') {
-        this.onMove({ direction: 'right' });
+        void this.onMove({ direction: 'right' });
       }
     };
-    // Defensive attach: ensure an event target with addEventListener exists.
-    const target = this.eventTarget;
-    if (!target || typeof (target as any).addEventListener !== 'function') {
-      // No target available; do not attach listeners. This keeps behavior safe in
-      // environments without a global window or when a test intentionally omits
-      // an event target.
-      return;
-    }
-    target.addEventListener('keydown', this.keydownHandler as EventListener);
+    // At this point the constructor already verified that `eventTarget` is
+    // non-null and supports addEventListener before calling this method, so
+    // directly attach the handler. This keeps the listener hookup concise and
+    // avoids redundant runtime checks.
+    const target = this.eventTarget!;
+    target.addEventListener('keydown', this.keydownHandler);
   }
 
   /**

@@ -5,7 +5,7 @@ import { Player, PlayerType } from './player';
 import Konva from 'konva';
 import { GAME_BOARD_DEFAULTS } from './gameBoardConfig';
 import { Controls, ControlType } from './controls';
-import { TickService, createRealTickService } from './tickService';
+import { TickService, createRealTickService, TickId } from './tickService';
 
 /**
  * GameBoardConfig holds the configuration for the GameBoard (grid size)
@@ -23,7 +23,16 @@ export class GameBoardConfig {
   }
 }
 
-export type DocumentLike = { getElementById: (id: string) => any | null };
+export type DocumentLike = { getElementById: (id: string) => HTMLElement | null };
+
+// Helper type for runtime-checked event targets that may provide
+// addEventListener/removeEventListener. Using `unknown` casts when
+// narrowing avoids introducing `any` into the codebase and satisfies
+// the linter's stricter rules.
+type HasEventListeners = {
+  addEventListener?: (...args: unknown[]) => void;
+  removeEventListener?: (...args: unknown[]) => void;
+};
 
 // Use the standard EventTarget interface for injected event targets so that
 // consumers like `Controls` can accept the same type without casts.
@@ -75,13 +84,16 @@ export class GameBoard {
   isSliding: boolean = false;
   currentRow: number = 0;
   pixelOffsetY: number = 0;
-  pixelOffsetX: number = 0;
-  fallIntervalDisplay: HTMLElement;
+  // Note: horizontal pixel offset was removed; render no longer accepts an X offset.
+  fallIntervalDisplay: HTMLElement | null = null;
   config: GameBoardConfig;
   private stage: Konva.Stage | null = null;
   private gridLayer: Konva.Layer | null = null;
   private blockLayer: Konva.Layer | null = null;
   private pendingMoveDirection: 'left' | 'right' | null = null;
+  private resizeTarget: EventTarget | null = null;
+  private resizeHandler?: EventListener;
+  private tickIntervalId?: TickId;
 
   /**
    * Create a new GameBoard instance.
@@ -117,7 +129,7 @@ export class GameBoard {
     // Create player for this board
     this.player = Player.create(controlType as PlayerType);
     this.block = Block.spawnAtTop(Math.floor(this.cols / 2));
-    this.fallIntervalDisplay = this.parent.querySelector('[id^=interval-]')!;
+    this.fallIntervalDisplay = this.parent.querySelector('[id^=interval-]') ?? null;
     // Pass the optional eventTarget into Controls so tests can inject a fake
     // event target and avoid global key listeners.
     this.controls = new Controls(
@@ -129,10 +141,16 @@ export class GameBoard {
     this.tick = tickService ?? createRealTickService();
     // Attach resize listener to injected windowTarget if available, otherwise
     // prefer the injected dom.window and finally the global window.
-    const resizeTarget = (windowTarget ??
+    this.resizeTarget = (windowTarget ??
       win ??
       (typeof window !== 'undefined' ? window : null)) as EventTarget | null;
-    resizeTarget?.addEventListener?.('resize', () => this.render());
+    this.resizeHandler = () => this.render();
+    if (this.resizeTarget) {
+      const r = this.resizeTarget as unknown as HasEventListeners;
+      if (typeof r.addEventListener === 'function') {
+        r.addEventListener('resize', this.resizeHandler);
+      }
+    }
     this.render();
     this.startTick();
   }
@@ -141,10 +159,11 @@ export class GameBoard {
    * Update the fall interval time display on the board.
    */
   updateFallIntervalDisplay() {
-    if (this.fallIntervalDisplay) {
+    if (this.fallIntervalDisplay !== null) {
       const now = this.tick.now();
       const elapsed = now - this.lastFallTime;
-      const remaining = Math.max(0, this.block.fallInterval - elapsed);
+      const fallInterval = Number(this.block?.fallInterval);
+      const remaining = Math.max(0, fallInterval - elapsed);
       // Throttle updates to at most ~60fps (every 16ms) so the progress bar
       // animates smoothly. Still bypass throttle when remaining === 0 so the
       // final state is shown immediately.
@@ -161,13 +180,12 @@ export class GameBoard {
         this.fallIntervalDisplay.textContent = `Next fall in: ${seconds}s`;
       }
       // Update progress bar
-      const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement;
+      const bar = this.fallIntervalDisplay.querySelector('.interval-bar') as HTMLElement | null;
       if (bar) {
-        // Compute progress safely. Avoid division by zero if fallInterval is invalid
-        // (non-finite or <= 0). In that case, show full progress only when remaining === 0,
-        // otherwise show 0. Otherwise compute 1 - remaining / fallInterval.
+        // Compute progress safely. Convert `fallInterval` explicitly to a number
+        // and avoid division by zero. If `fallInterval` is invalid (non-finite or <= 0),
+        // show full progress only when remaining === 0, otherwise show 0.
         let progress: number;
-        const fallInterval = this.block?.fallInterval;
         if (!Number.isFinite(fallInterval) || fallInterval <= 0) {
           progress = remaining === 0 ? 1 : 0;
         } else {
@@ -179,7 +197,7 @@ export class GameBoard {
       }
     }
   }
-  render(pixelOffsetY: number = 0, pixelOffsetX: number = 0) {
+  render(pixelOffsetY: number = 0) {
     const rect = this.parent.getBoundingClientRect();
     const cellWidth = Math.floor(rect.width / this.cols);
     const cellHeight = Math.floor(rect.height / this.rows);
@@ -307,7 +325,7 @@ export class GameBoard {
    */
   handleMove(direction: 'left' | 'right') {
     if (this.isSliding) return;
-    let targetCol = this.block.col + (direction === 'left' ? -1 : 1);
+    const targetCol = this.block.col + (direction === 'left' ? -1 : 1);
     if (targetCol < 0 || targetCol > this.cols - 1) return;
     this.pendingMoveDirection = direction;
     if (direction === 'left') {
@@ -334,7 +352,7 @@ export class GameBoard {
     this.lastFallTime = this.tick.now();
     // Poll at a frame rate (~60fps) to update display and check fall timing.
     // Using setInterval makes this deterministic when using MockTickService.
-    this.tick.setInterval(() => {
+    this.tickIntervalId = this.tick.setInterval(() => {
       if (!this.running) return;
       const now = this.tick.now();
       // Only move block down if enough time has passed
@@ -344,6 +362,49 @@ export class GameBoard {
       }
       this.updateFallIntervalDisplay();
     }, 16);
+    // store id so we can clear it during destroy()
+  }
+
+  /**
+   * Destroy this GameBoard, removing listeners and timers to avoid leaks.
+   */
+  public destroy() {
+    // remove resize listener
+    if (this.resizeHandler && this.resizeTarget) {
+      const r = this.resizeTarget as unknown as HasEventListeners;
+      if (typeof r.removeEventListener === 'function') {
+        r.removeEventListener('resize', this.resizeHandler);
+      }
+    }
+    this.resizeHandler = undefined;
+    this.resizeTarget = null;
+
+    // clear tick interval
+    if (this.tickIntervalId !== undefined) {
+      try {
+        this.tick.clearInterval(this.tickIntervalId);
+      } catch {
+        // ignore
+      }
+      this.tickIntervalId = undefined;
+    }
+
+    // dispose controls
+    try {
+      this.controls.dispose();
+    } catch {
+      // swallow
+    }
+
+    // destroy Konva stage and layers
+    if (this.stage) {
+      this.stage.destroy();
+      this.stage = null;
+    }
+    this.gridLayer = null;
+    this.blockLayer = null;
+
+    this.running = false;
   }
 
   /**

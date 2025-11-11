@@ -21,7 +21,7 @@ jest.mock('konva', () => ({
   },
 }));
 
-import { setMockHex, resetMockHex } from './utils/colorMock';
+import { resetMockHex } from './utils/colorMock';
 import { MockTickService } from '../src/tickService';
 import { GameBoard } from '../src/gameBoard';
 
@@ -44,7 +44,8 @@ describe('GameBoard integration with MockTickService', () => {
     const boardDiv: any = { innerHTML: '', className: 'board' };
     const intervalDiv: any = {
       id: 'interval-1',
-      querySelector: (sel: string) => null,
+      // parameter intentionally unused; prefix with _ to satisfy lint rules
+      querySelector: (_sel: string) => null,
       textContent: '',
     };
     const parent: any = {

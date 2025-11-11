@@ -16,6 +16,16 @@ Desktop.ini
 # TypeScript
 *.tsbuildinfo
 # Webpack
+# cache directory (appears twice previously) - kept only once
 .cache/
 # TailwindCSS
 *.tmp
+# Coverage
+coverage/
+.nyc_output/
+# ESLint cache
+.eslintcache
+# Source maps for public bundle
+public/*.map
+# npm debug logs
+npm-debug.log*
