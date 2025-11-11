@@ -44,8 +44,7 @@
   ,
   "lint-staged": {
     "*.{ts,js,css,html}": [
-      "npx prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }
