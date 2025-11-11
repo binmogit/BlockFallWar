@@ -2,12 +2,13 @@ jest.mock('konva', () => ({
   __esModule: true,
   default: {},
 }));
-jest.mock('color', () => ({
-  __esModule: true,
-  default: () => ({ darken: (amount: number) => ({ hex: () => '#000' }) }),
-}));
+import { resetMockHex } from './utils/colorMock';
 import { Block } from '../src/block';
 import { GAME_BOARD_DEFAULTS } from '../src/gameBoardConfig';
+
+beforeEach(() => {
+  resetMockHex();
+});
 
 describe('Block movement', () => {
   it('moves left from col 1 to col 0', () => {

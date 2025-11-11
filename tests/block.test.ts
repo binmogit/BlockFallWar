@@ -2,13 +2,14 @@ jest.mock('konva', () => ({
   __esModule: true,
   default: {},
 }));
-jest.mock('color', () => ({
-  __esModule: true,
-  default: (input: any) => ({ darken: (amount: number) => ({ hex: () => '#000' }) }),
-}));
+import { resetMockHex } from './utils/colorMock';
 import { Block } from '../src/block';
 import { Player } from '../src/player';
 import { BLOCK_DEFAULTS } from '../src/blockConfig';
+
+beforeEach(() => {
+  resetMockHex();
+});
 
 describe('Block', () => {
   describe('spawnAtTop', () => {
@@ -18,7 +19,7 @@ describe('Block', () => {
         const block = Block.spawnAtTop(4);
         expect(block.row).toBe(0);
         expect(block.col).toBe(4);
-  expect(block.color).toBe(BLOCK_DEFAULTS.defaultColor);
+        expect(block.color).toBe(BLOCK_DEFAULTS.defaultColor);
       });
     });
 

@@ -63,7 +63,7 @@ export class Block {
   constructor(
     row: number,
     col: number,
-  color: string = BLOCK_DEFAULTS.defaultColor,
+    color: string = BLOCK_DEFAULTS.defaultColor,
     fallInterval: number = BLOCK_DEFAULTS.fallInterval,
     moveInterval: number = BLOCK_DEFAULTS.moveInterval,
   ) {

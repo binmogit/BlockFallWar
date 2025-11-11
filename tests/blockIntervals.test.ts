@@ -2,12 +2,13 @@ jest.mock('konva', () => ({
   __esModule: true,
   default: {},
 }));
-jest.mock('color', () => ({
-  __esModule: true,
-  default: (input: any) => ({ darken: (amount: number) => ({ hex: () => '#000' }) }),
-}));
+import { resetMockHex } from './utils/colorMock';
 import { Block } from '../src/block';
 import { BLOCK_DEFAULTS } from '../src/blockConfig';
+
+beforeEach(() => {
+  resetMockHex();
+});
 
 describe('Block interval validation', () => {
   it('falls back to defaults for negative or zero intervals', () => {

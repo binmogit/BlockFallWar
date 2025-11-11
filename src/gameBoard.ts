@@ -5,6 +5,7 @@ import { Player, PlayerType } from './player';
 import Konva from 'konva';
 import { GAME_BOARD_DEFAULTS } from './gameBoardConfig';
 import { Controls, ControlType } from './controls';
+import { TickService, createRealTickService } from './tickService';
 
 /**
  * GameBoardConfig holds the configuration for the GameBoard (grid size)
@@ -20,6 +21,25 @@ export class GameBoardConfig {
     this.rows = config?.rows ?? GAME_BOARD_DEFAULTS.rows;
     this.cols = config?.cols ?? GAME_BOARD_DEFAULTS.cols;
   }
+}
+
+export type DocumentLike = { getElementById: (id: string) => any | null };
+
+// Use the standard EventTarget interface for injected event targets so that
+// consumers like `Controls` can accept the same type without casts.
+export type WindowLike = EventTarget;
+
+export interface GameBoardOptions {
+  tickService?: TickService;
+  // Event target used for keyboard/input listeners (e.g. window or a fake target)
+  eventTarget?: EventTarget | null;
+  /** Optional window-like target specifically for resize events (separate from eventTarget used for keyboard/input) */
+  windowTarget?: EventTarget | null;
+  dom?: {
+    document?: DocumentLike;
+    window?: EventTarget;
+    performance?: { now: () => number };
+  } | null;
 }
 
 /**
@@ -50,6 +70,7 @@ export class GameBoard {
   parent: HTMLElement;
   boardDiv: HTMLElement;
   controls: Controls;
+  tick: TickService;
   cellSize: number = 0;
   isSliding: boolean = false;
   currentRow: number = 0;
@@ -68,19 +89,50 @@ export class GameBoard {
    * @param controlType - 'player' or 'bot' for controls.
    * @param config - Optional config overrides.
    */
-  constructor(parentId: string, controlType: ControlType, config?: Partial<GameBoardConfig>) {
+  constructor(
+    parentId: string,
+    controlType: ControlType,
+    config?: Partial<GameBoardConfig>,
+    options?: GameBoardOptions,
+  ) {
     this.config = new GameBoardConfig(config);
     this.rows = this.config.rows;
     this.cols = this.config.cols;
     // ...existing DOM logic...
-    this.parent = document.getElementById(parentId)!;
+    // Allow tests or alternate hosts to inject a `document`/`window`/`performance` bundle.
+    const tickService = options?.tickService;
+    const eventTarget = options?.eventTarget;
+    const windowTarget = options?.windowTarget;
+    const dom = options?.dom;
+
+    const doc = dom?.document ?? (typeof document !== 'undefined' ? document : null);
+    const win = dom?.window ?? (typeof window !== 'undefined' ? window : null);
+
+    const parentElement = doc?.getElementById(parentId);
+    if (!parentElement) {
+      throw new Error(`Parent element with id "${parentId}" not found`);
+    }
+    this.parent = parentElement;
     this.boardDiv = this.parent.querySelector('.board')!;
     // Create player for this board
     this.player = Player.create(controlType as PlayerType);
     this.block = Block.spawnAtTop(Math.floor(this.cols / 2));
     this.fallIntervalDisplay = this.parent.querySelector('[id^=interval-]')!;
-    this.controls = new Controls(controlType, (event) => this.handleMove(event.direction));
-    window.addEventListener('resize', () => this.render());
+    // Pass the optional eventTarget into Controls so tests can inject a fake
+    // event target and avoid global key listeners.
+    this.controls = new Controls(
+      controlType,
+      (event) => this.handleMove(event.direction),
+      (eventTarget ?? undefined) as EventTarget | undefined,
+    );
+    // Use provided tick service or default to real browser timers
+    this.tick = tickService ?? createRealTickService();
+    // Attach resize listener to injected windowTarget if available, otherwise
+    // prefer the injected dom.window and finally the global window.
+    const resizeTarget = (windowTarget ??
+      win ??
+      (typeof window !== 'undefined' ? window : null)) as EventTarget | null;
+    resizeTarget?.addEventListener?.('resize', () => this.render());
     this.render();
     this.startTick();
   }
@@ -90,7 +142,7 @@ export class GameBoard {
    */
   updateFallIntervalDisplay() {
     if (this.fallIntervalDisplay) {
-      const now = performance.now();
+      const now = this.tick.now();
       const elapsed = now - this.lastFallTime;
       const remaining = Math.max(0, this.block.fallInterval - elapsed);
       // Throttle updates to at most ~60fps (every 16ms) so the progress bar
@@ -265,7 +317,7 @@ export class GameBoard {
     }
     this.render();
     // Use a short timeout to allow the green arrow to be visible for a frame
-    setTimeout(() => {
+    this.tick.setTimeout(() => {
       this.pendingMoveDirection = null;
       this.render();
     }, 50);
@@ -275,19 +327,23 @@ export class GameBoard {
    * Start the game tick loop.
    */
   startTick() {
+    // Use the injected TickService to drive the game loop so tests can
+    // deterministically advance virtual time with MockTickService.
+    if (this.running) return;
     this.running = true;
-    this.lastFallTime = performance.now();
-    const tick = (now: number) => {
+    this.lastFallTime = this.tick.now();
+    // Poll at a frame rate (~60fps) to update display and check fall timing.
+    // Using setInterval makes this deterministic when using MockTickService.
+    this.tick.setInterval(() => {
       if (!this.running) return;
+      const now = this.tick.now();
       // Only move block down if enough time has passed
       if (this.block.row < this.rows - 1 && now - this.lastFallTime >= this.block.fallInterval) {
         this.slideBlockDown();
         this.lastFallTime = now;
       }
       this.updateFallIntervalDisplay();
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
+    }, 16);
   }
 
   /**
